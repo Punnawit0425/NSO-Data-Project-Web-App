@@ -22,6 +22,30 @@ export default function VillageView() {
     showToast(`ส่งใบแจ้งหนี้ค่าปรับขยะเสีย ${amount.toFixed(2)} บาท ไปยังบ้านเลขที่ ${houseId} เรียบร้อยแล้ว`);
   };
 
+  // ----- ข้อ 4: แนวโน้มอัตราความร่วมมือรายเดือน (กราฟเส้น) -----
+  const coopTrend = [
+    { m: 'ม.ค.', v: 62 },
+    { m: 'ก.พ.', v: 68 },
+    { m: 'มี.ค.', v: 72 },
+    { m: 'เม.ย.', v: 77 },
+    { m: 'พ.ค.', v: 81 },
+    { m: 'มิ.ย.', v: 85 },
+  ];
+  const coopX = (i) => 4 + (i / (coopTrend.length - 1)) * 92;
+  const coopY = (val) => 38 - (val / 100) * 34;
+  const coopLine = coopTrend.map((p, i) => `${i ? 'L' : 'M'}${coopX(i).toFixed(1)} ${coopY(p.v).toFixed(1)}`).join(' ');
+  const coopArea = `${coopLine} L${coopX(coopTrend.length - 1).toFixed(1)} 40 L${coopX(0).toFixed(1)} 40 Z`;
+
+  // ----- ข้อ 5: เปรียบเทียบเงินปันผลสะสมรายเดือน จริง vs เป้าหมาย (กราฟแท่ง) -----
+  const dividendMonthly = [
+    { m: 'มกราคม', actual: 8000, proj: 9000 },
+    { m: 'กุมภาพันธ์', actual: 13000, proj: 16000 },
+    { m: 'มีนาคม', actual: 18000, proj: 24000 },
+    { m: 'เมษายน', actual: 22172, proj: 30000 },
+  ];
+  const DIVIDEND_MAX = 30000;
+  const barH = (val) => (val / DIVIDEND_MAX) * 34;
+
   return (
     <section className="space-y-6">
       {/* Header Block for Village Profile */}
@@ -134,11 +158,28 @@ export default function VillageView() {
           <div className="space-y-4 pt-2">
             <div>
               <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
-                <span>อัตราการเข้าร่วม (Participation Rate)</span>
-                <span className="text-indigo-600">85% (85 จาก 100 หลังคาเรือน)</span>
+                <span>แนวโน้มอัตราความร่วมมือรายเดือน (Monthly Cooperation Trend)</span>
+                <span className="text-indigo-600">ล่าสุด 85%</span>
               </div>
-              <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                <div className="bg-indigo-600 h-full rounded-full" style={{ width: '85%' }}></div>
+              <div className="h-32 relative pt-2">
+                <svg className="w-full h-full" viewBox="0 0 100 40" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="village-coop-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.2" />
+                      <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+                  <path d={coopArea} fill="url(#village-coop-grad)" />
+                  <path d={coopLine} fill="none" stroke="#4f46e5" strokeWidth="2" />
+                  {coopTrend.map((p, i) => (
+                    <circle key={p.m} cx={coopX(i)} cy={coopY(p.v)} r="1.4" fill="#4f46e5" />
+                  ))}
+                </svg>
+              </div>
+              <div className="flex justify-between px-1 text-[10px] font-medium text-slate-500">
+                {coopTrend.map((p) => (
+                  <span key={p.m}>{p.m}</span>
+                ))}
               </div>
             </div>
 
@@ -196,8 +237,8 @@ export default function VillageView() {
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h4 className="font-bold text-slate-800 text-sm md:text-base">กราฟเส้นจำลอง: สัดส่วนการเปลี่ยนขยะแห้งเป็นเงินปันผลสะสม</h4>
-            <p className="text-xs text-slate-500">เปรียบเทียบระหว่างปริมาณเงินปันผลสะสมในปัจจุบัน และเส้นแนวโน้มการเติบโตแบบก้าวกระโดดเมื่ออัตราความร่วมมือเพิ่มขึ้น</p>
+            <h4 className="font-bold text-slate-800 text-sm md:text-base">กราฟแท่งเปรียบเทียบรายเดือน: เงินปันผลสะสมจริง เทียบกับเป้าหมาย</h4>
+            <p className="text-xs text-slate-500">เปรียบเทียบยอดเงินปันผลสะสมจริงในแต่ละเดือน กับเป้าหมายเมื่ออัตราความร่วมมือของลูกบ้านเพิ่มขึ้น</p>
           </div>
           <span className="text-xs text-indigo-500 font-semibold bg-indigo-50 px-3 py-1 rounded-full">เป้าสะสมปลายปี: 30,000 บาท</span>
         </div>
@@ -208,42 +249,30 @@ export default function VillageView() {
           <div className="absolute left-0 right-0 bottom-6 border-b border-slate-200 text-[10px] text-slate-400 pb-1">0 บาท</div>
 
           <svg className="w-full h-44 mt-4" viewBox="0 0 100 40" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="village-grad-curr" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.2" />
-                <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.0" />
-              </linearGradient>
-              <linearGradient id="village-grad-proj" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity="0.1" />
-                <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-              </linearGradient>
-            </defs>
-            <path d="M5 36 Q 30 30 60 18 T 95 6" fill="none" stroke="#10b981" strokeWidth="2" strokeDasharray="1.5, 0.8" />
-            <path d="M5 36 Q 30 30 60 18 T 95 6 L 95 40 L 5 40 Z" fill="url(#village-grad-proj)" />
-            <circle cx="5" cy="36" r="1" fill="#10b981" />
-            <circle cx="35" cy="28" r="1" fill="#10b981" />
-            <circle cx="65" cy="18" r="1" fill="#10b981" />
-            <circle cx="95" cy="6" r="1.5" fill="#10b981" />
-
-            <path d="M5 36 Q 35 28 65 19 T 95 14" fill="none" stroke="#4f46e5" strokeWidth="2.5" />
-            <path d="M5 36 Q 35 28 65 19 T 95 14 L 95 40 L 5 40 Z" fill="url(#village-grad-curr)" />
-            <circle cx="5" cy="36" r="1.5" fill="#4f46e5" />
-            <circle cx="35" cy="28" r="1.5" fill="#4f46e5" />
-            <circle cx="65" cy="19" r="1.5" fill="#4f46e5" />
-            <circle cx="95" cy="14" r="2" fill="#4f46e5" stroke="#ffffff" strokeWidth="0.5" />
+            {dividendMonthly.map((d, i) => {
+              const groupW = 100 / dividendMonthly.length;
+              const actualX = i * groupW + groupW * 0.2;
+              const projX = i * groupW + groupW * 0.5;
+              const w = groupW * 0.28;
+              return (
+                <g key={d.m}>
+                  <rect x={actualX} y={40 - barH(d.actual)} width={w} height={barH(d.actual)} fill="#4f46e5" />
+                  <rect x={projX} y={40 - barH(d.proj)} width={w} height={barH(d.proj)} fill="#10b981" opacity="0.55" />
+                </g>
+              );
+            })}
           </svg>
 
-          <div className="flex justify-between px-4 text-[10px] font-medium text-slate-500 mt-2">
-            <span>มกราคม</span>
-            <span>กุมภาพันธ์</span>
-            <span>มีนาคม</span>
-            <span>เมษายน (สะสมปัจจุบัน)</span>
+          <div className="flex justify-between px-2 text-[10px] font-medium text-slate-500 mt-2">
+            {dividendMonthly.map((d) => (
+              <span key={d.m} className="flex-1 text-center">{d.m}</span>
+            ))}
           </div>
         </div>
 
         <div className="flex items-center justify-center gap-4 text-xs font-semibold text-slate-600 pt-1">
-          <span className="flex items-center gap-1.5"><span className="w-3.5 h-1.5 bg-indigo-600 rounded-sm"></span> เงินปันผลที่เปลี่ยนสภาพได้จริง (Actual)</span>
-          <span className="flex items-center gap-1.5"><span className="w-3.5 h-1.5 border border-dashed border-emerald-500 bg-emerald-100 rounded-sm"></span> ทิศทางเป้าหมายเมื่อร่วมมือ 100% (High Cooperation Projection)</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 bg-indigo-600 rounded-sm"></span> เงินปันผลที่เปลี่ยนสภาพได้จริง (Actual)</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 bg-emerald-500/60 rounded-sm"></span> เป้าหมายเมื่อร่วมมือ 100% (High Cooperation Target)</span>
         </div>
       </div>
 

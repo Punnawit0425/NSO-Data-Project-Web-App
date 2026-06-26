@@ -103,23 +103,46 @@ export default function PublicView() {
           <div className="inline-flex items-center gap-1.5 bg-emerald-500/30 text-emerald-300 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
             <Icon name="sparkles" className="w-3.5 h-3.5" /> นวัตกรรมนนทบุรีคาร์บอนต่ำ
           </div>
-          <h2 className="text-3xl md:text-5xl font-bold leading-tight">ร่วมขับเคลื่อนจังหวัดนนทบุรีคาร์บอนต่ำ ด้วยแพลตฟอร์ม NonD</h2>
+          <h2 className="text-3xl md:text-5xl font-extrabold leading-tight tracking-tight">
+            ร่วมสร้าง<span className="text-emerald-300">นนทบุรีเมืองน่าอยู่ </span>
+            <br /> สิ่งแวดล้อมดี 
+            <br className="hidden md:block" /> เริ่มต้นที่{' '}
+            <span className="/40 text-white">NonD</span>
+          </h2>
+          <div className="flex items-center gap-2.5 text-emerald-200/90 text-sm md:text-base font-semibold tracking-wide">
+            <span className="h-px w-8 bg-emerald-300/60"></span>
+            นนท์น่าอยู่ · สิ่งแวดล้อมดี · NonD
+          </div>
           <p className="text-emerald-100 text-sm md:text-base leading-relaxed">
-            เปลี่ยนขยะรีไซเคิลแห้งให้กลายเป็น "กองทุนหมุนเวียนชุมชนชาวนนท์" และ "คาร์บอนเครดิต" ที่มีมูลค่าจริง
-            เชื่อมโยงเทศบาลในนนทบุรี โรงงานอุตสาหกรรม และบ้านเรือนเข้าด้วยกันด้วยเทคโนโลยีโปร่งใส ตรวจสอบได้
+            ยกระดับการจัดการขยะต้นทางด้วยระบบฐานข้อมูลอัจฉริยะ เปลี่ยนขยะรีไซเคิลสู่งบประมาณหมุนเวียนและคาร์บอนเครดิต
+            เพื่อขับเคลื่อนนนทบุรีสู่เมืองคาร์บอนต่ำและลดการฝังกลบอย่างยั่งยืน
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
             <button
               onClick={() => switchRole('municipality')}
               className="bg-white text-emerald-900 font-semibold px-6 py-2.5 rounded-xl hover:bg-emerald-50 transition-all flex items-center gap-2 shadow-sm text-sm"
             >
-              <Icon name="log-in" className="w-4 h-4" /> เข้าสู่ระบบเจ้าหน้าที่นนทบุรี
+              <Icon name="log-in" className="w-4 h-4" /> เข้าสู่ระบบ · ลงชื่อเข้าใช้
             </button>
             <a
               href="#demo-dashboard"
               className="bg-emerald-700 hover:bg-emerald-600 text-white font-medium px-5 py-2.5 rounded-xl transition-all text-sm border border-emerald-600/50"
             >
-              ดูข้อมูลภาพรวมสาธารณะของจังหวัด
+              ดูข้อมูลภาพรวม
+            </a>
+            {/* ลิงก์ไปหน้าจำลอง LINE OA (โฟลเดอร์ line-oa-ui) */}
+            <a
+              href="line-oa-ui/index.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white font-semibold px-5 py-2.5 rounded-xl transition-all text-sm flex items-center gap-2 shadow-sm hover:opacity-90"
+              style={{ backgroundColor: '#06C755' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 52 52" fill="none" aria-hidden="true">
+                <rect width="52" height="52" rx="14" fill="white" />
+                <path d="M43.5 24.3C43.5 16.1 35.7 9.4 26 9.4C16.3 9.4 8.5 16.1 8.5 24.3C8.5 31.6 14.9 37.7 23.4 38.9C24 39 24.9 39.3 25.1 39.8C25.3 40.3 25.2 41 25.1 41.5L24.7 43.8C24.6 44.3 24.3 45.6 26 44.9C27.7 44.2 35.5 39.3 38.9 35.4C41.3 32.8 43.5 28.8 43.5 24.3Z" fill="#06C755" />
+              </svg>
+              เปิดหน้า LINE OA (ตัวอย่าง)
             </a>
           </div>
         </div>
@@ -424,22 +447,45 @@ export default function PublicView() {
             </button>
           </div>
         </div>
-        <div className="bg-slate-100 p-8 flex flex-col justify-between border-l border-slate-200 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-5 pointer-events-none">
-            <div className="w-full h-full bg-[radial-gradient(#059669_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        {/* ช่องทางติดต่อทาง LINE Official (ข้อมูลสมมุติเพื่อการสาธิต) */}
+        <div className="p-8 flex flex-col justify-between border-l border-emerald-200 relative overflow-hidden text-white" style={{ backgroundColor: '#06C755' }}>
+          <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <div className="w-full h-full bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]"></div>
           </div>
           <div className="relative z-10 space-y-4">
-            <span className="text-xs font-semibold text-emerald-600 uppercase tracking-widest bg-emerald-100 px-2.5 py-1 rounded-md">ฟีเจอร์อนาคตผู้ว่าฯ นนทบุรี</span>
-            <h4 className="text-xl font-bold text-slate-800">แผงควบคุมระบบบูรณาการระดับผู้ว่าฯ</h4>
-            <p className="text-sm text-slate-500 leading-relaxed">
-              รวมข้อมูลสถิติขยะ คาร์บอนเครดิต กองทุนรวม และสวัสดิการชุมชนจากทุกเทศบาลในนนทบุรีไว้ในจุดเดียว เพื่อให้ผู้ว่าราชการจังหวัดนำไปประเมินความโปร่งใสและสร้างนโยบายต่อสู้โลกร้อนอย่างเป็นรูปธรรม
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest bg-white/20 px-2.5 py-1 rounded-md">
+              <svg width="14" height="14" viewBox="0 0 52 52" fill="none" aria-hidden="true">
+                <rect width="52" height="52" rx="14" fill="white" />
+                <path d="M43.5 24.3C43.5 16.1 35.7 9.4 26 9.4C16.3 9.4 8.5 16.1 8.5 24.3C8.5 31.6 14.9 37.7 23.4 38.9C24 39 24.9 39.3 25.1 39.8C25.3 40.3 25.2 41 25.1 41.5L24.7 43.8C24.6 44.3 24.3 45.6 26 44.9C27.7 44.2 35.5 39.3 38.9 35.4C41.3 32.8 43.5 28.8 43.5 24.3Z" fill="#06C755" />
+              </svg>
+              ช่องทางติดต่อทางไลน์
+            </span>
+            <h4 className="text-xl font-bold">ปรึกษา / สอบถามผ่าน LINE Official</h4>
+            <p className="text-sm text-white/90 leading-relaxed">
+              มีคำถามเรื่องการคัดแยกขยะ คาร์บอนเครดิต หรืออยากเริ่มโครงการในชุมชนของท่าน?
+              ทักหาทีมงาน NonD นนทบุรีได้โดยตรงผ่าน LINE Official Account ตอบกลับทุกวัน 08:00–18:00 น.
             </p>
-          </div>
-          <div className="border-t border-slate-200 pt-6 mt-8">
-            <div className="flex items-center gap-3 text-slate-600 text-xs">
-              <Icon name="info" className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-              <span>ระบบจำลองสิทธิ์การเข้าใช้งานนนทบุรีไว้ล่วงหน้า คุณสามารถสลับเป็นผู้ใช้งานด้านบนเพื่อทดสอบได้ทันที</span>
+            <div className="bg-white/15 rounded-xl p-3 flex items-center gap-3">
+              <div className="bg-white text-[#06C755] w-12 h-12 rounded-xl flex items-center justify-center font-black text-base flex-shrink-0">QR</div>
+              <div>
+                <span className="block text-[11px] text-white/80">LINE ID อย่างเป็นทางการ (สมมุติ)</span>
+                <span className="block text-lg font-bold tracking-wide">@nond-nonthaburi</span>
+              </div>
             </div>
+          </div>
+          <div className="relative z-10 mt-8">
+            <a
+              href="line-oa-ui/index.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full bg-white text-[#06C755] font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-50 transition-all"
+            >
+              <svg width="18" height="18" viewBox="0 0 52 52" fill="none" aria-hidden="true">
+                <rect width="52" height="52" rx="14" fill="#06C755" />
+                <path d="M43.5 24.3C43.5 16.1 35.7 9.4 26 9.4C16.3 9.4 8.5 16.1 8.5 24.3C8.5 31.6 14.9 37.7 23.4 38.9C24 39 24.9 39.3 25.1 39.8C25.3 40.3 25.2 41 25.1 41.5L24.7 43.8C24.6 44.3 24.3 45.6 26 44.9C27.7 44.2 35.5 39.3 38.9 35.4C41.3 32.8 43.5 28.8 43.5 24.3Z" fill="white" />
+              </svg>
+              เพิ่มเพื่อน / เปิดแชต LINE
+            </a>
           </div>
         </div>
       </div>

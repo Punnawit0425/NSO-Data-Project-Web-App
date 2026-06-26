@@ -478,31 +478,49 @@ function handleReportSubmit(e) {
   submitBtn.disabled = true;
   submitBtn.textContent = 'กำลังส่งรายงานข้อมูล...';
 
-  // Simulate API post request delay
-  setTimeout(() => {
-    // Show Success Toast
-    const toast = document.getElementById('success-toast');
-    document.getElementById('toast-message').textContent = 'รายงานขยะประเภท ' + wasteType + ' เรียบร้อยแล้ว';
-    toast.classList.add('active');
+  // Google Apps Script endpoint
+  const REPORT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwGXi5gKHiuOQkdFAKPdzq3GfMg4klT-X9sgUvlHSxaLs69RtLJSRcWPAuq1HLXSZ9d/exec';
 
-    setTimeout(() => {
-      // Clear states
-      toast.classList.remove('active');
+  // POST the collected data (selected waste type + report details)
+  fetch(REPORT_ENDPOINT, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({
+      wasteType: wasteType,
+      detail: detail
+    })
+  })
+    .then(() => {
+      // Show Success Toast
+      const toast = document.getElementById('success-toast');
+      document.getElementById('toast-message').textContent = 'รายงานขยะประเภท ' + wasteType + ' เรียบร้อยแล้ว';
+      toast.classList.add('active');
+
+      setTimeout(() => {
+        // Clear states
+        toast.classList.remove('active');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'ส่งรายงานเข้าสู่ระบบ N-UIP';
+        closeLiff();
+
+        // Send auto user and bot updates inside LINE chat logs
+        sendSimulatedUserMessage(`🚨 รายงานความสะอาดเสร็จสิ้น\n• ประเภท: ${wasteType}\n• รายละเอียด: ${detail}\n• พิกัด: ปากเกร็ด นนทบุรี`);
+
+        // Bot confirms submission success
+        setTimeout(() => {
+          appendMessage('bot', `เจ้าหน้าที่ได้รับแจ้งเรื่องแล้วค่ะ! 🚨\n\n• รหัสคำสั่ง: #NUIP-${Math.floor(100000 + Math.random() * 900000)}\n• ข้อมูลถูกบันทึกเข้าระบบพิกัด GIS ของเทศบาลปากเกร็ดแล้ว\n\nท่านจะได้รับข้อความแจ้งเตือนความคืบหน้าเมื่อเจ้าหน้าที่เข้าทำความสะอาดเสร็จสิ้นค่ะ ขอบคุณมากนะคะที่ช่วยร่วมสร้างสิ่งแวดล้อมที่ดีในนนทบุรี! 💚🙏`);
+        }, 1000);
+
+      }, 2000);
+    })
+    .catch((err) => {
+      // Network/submission failure — restore button so the user can retry
+      console.error('[N-UIP] ส่งรายงานไม่สำเร็จ:', err);
       submitBtn.disabled = false;
       submitBtn.textContent = 'ส่งรายงานเข้าสู่ระบบ N-UIP';
-      closeLiff();
-
-      // Send auto user and bot updates inside LINE chat logs
-      sendSimulatedUserMessage(`🚨 รายงานความสะอาดเสร็จสิ้น\n• ประเภท: ${wasteType}\n• รายละเอียด: ${detail}\n• พิกัด: ปากเกร็ด นนทบุรี`);
-      
-      // Bot confirms submission success
-      setTimeout(() => {
-        appendMessage('bot', `เจ้าหน้าที่ได้รับแจ้งเรื่องแล้วค่ะ! 🚨\n\n• รหัสคำสั่ง: #NUIP-${Math.floor(100000 + Math.random() * 900000)}\n• ข้อมูลถูกบันทึกเข้าระบบพิกัด GIS ของเทศบาลปากเกร็ดแล้ว\n\nท่านจะได้รับข้อความแจ้งเตือนความคืบหน้าเมื่อเจ้าหน้าที่เข้าทำความสะอาดเสร็จสิ้นค่ะ ขอบคุณมากนะคะที่ช่วยร่วมสร้างสิ่งแวดล้อมที่ดีในนนทบุรี! 💚🙏`);
-      }, 1000);
-
-    }, 2000);
-
-  }, 1500);
+      alert('เกิดข้อผิดพลาดในการส่งรายงาน กรุณาลองใหม่อีกครั้งค่ะ');
+    });
 }
 
 // 6. ACTION CARD MOCK TRIGGERS

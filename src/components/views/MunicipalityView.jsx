@@ -5,8 +5,8 @@ import { useApp } from '../../appContext.js';
 const SUB_TABS = [
   { id: 'main', icon: 'home', label: 'หน้าหลัก (ภาพรวมเทศบาลนนทบุรี)' },
   { id: 'factory', icon: 'factory', label: 'แท็บโรงงาน (ข้อมูลอุตสาหกรรม)' },
-  { id: 'waste', icon: 'table-properties', label: 'แท็บข้อมูลขยะ (แยกประเภท & ตีราคา)' },
   { id: 'community', icon: 'users', label: 'แท็บหมู่บ้าน (ข้อมูลครัวเรือน)' },
+  { id: 'waste', icon: 'table-properties', label: 'แท็บข้อมูลขยะ (แยกประเภท & ตีราคา)' },
 ];
 
 const ACTIVE_SUB = 'muni-sub-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-emerald-600 text-white shadow-sm';
@@ -48,7 +48,7 @@ export default function MunicipalityView() {
       {subTab === 'factory' && <MuniFactory exportData={exportData} factoryApproved={factoryApproved} />}
       {subTab === 'waste' && <MuniWaste />}
       {subTab === 'community' && (
-        <MuniCommunity v={v} villageFilter={villageFilter} setVillageFilter={setVillageFilter} exportData={exportData} />
+        <MuniCommunity v={v} villages={data.villages} villageFilter={villageFilter} setVillageFilter={setVillageFilter} exportData={exportData} />
       )}
     </section>
   );
@@ -66,10 +66,10 @@ function MuniMain({ runAI, approveFactory }) {
             <span className="text-xs text-slate-500 font-medium block">ปริมาณขยะแห้งสะสมรวม (ทุกหมู่บ้าน+โรงงาน)</span>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-extrabold text-slate-800">21,754 <span className="text-sm font-normal text-slate-500">ตัน</span></span>
-              <span className="text-xs text-rose-600 font-semibold bg-rose-100 px-1.5 rounded">-30.6%</span>
+              <span className="text-xs text-emerald-600 font-semibold bg-emerald-100 px-1.5 rounded">-30.6%</span>
             </div>
-            <span className="text-xs text-rose-600 flex items-center gap-1 mt-1 font-medium">
-              <Icon name="arrow-down-right" className="w-3.5 h-3.5" /> -30.6% เทียบกับปี 2566
+            <span className="text-xs text-emerald-600 flex items-center gap-1 mt-1 font-medium">
+              <Icon name="arrow-down-right" className="w-3.5 h-3.5" /> -30.6% เทียบกับปี 2566 (ขยะลดลง = ดี)
             </span>
           </div>
           <div className="absolute right-4 top-4 bg-emerald-50 text-emerald-600 p-2.5 rounded-xl">
@@ -82,7 +82,7 @@ function MuniMain({ runAI, approveFactory }) {
             <span className="text-xs text-slate-500 font-medium block">อัตราขยะปนเปื้อนเฉลี่ยจังหวัดนนท์</span>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-extrabold text-rose-600">4.2%</span>
-              <span className="text-xs text-rose-600 font-semibold bg-rose-100 px-1.5 rounded">-1.2%</span>
+              <span className="text-xs text-emerald-600 font-semibold bg-emerald-100 px-1.5 rounded">-1.2%</span>
             </div>
             <span className="text-xs text-rose-600 flex items-center gap-1 mt-1 font-medium">
               <Icon name="alert-triangle" className="w-3.5 h-3.5" /> *สูงผิดปกติในเขตหมู่บ้าน B ด่วน!
@@ -98,7 +98,7 @@ function MuniMain({ runAI, approveFactory }) {
             <span className="text-xs text-slate-500 font-medium block">คาร์บอนเครดิตสะสมที่สร้างได้</span>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-extrabold text-emerald-700">4,351 <span className="text-sm font-normal text-slate-500">tCO2e</span></span>
-              <span className="text-xs text-rose-600 font-semibold bg-rose-100 px-1.5 rounded">-30.6%</span>
+              <span className="text-xs text-emerald-600 font-semibold bg-emerald-100 px-1.5 rounded">-30.6%</span>
             </div>
             <span className="text-xs text-emerald-600 flex items-center gap-1 mt-1 font-medium">
               <Icon name="check-circle" className="w-3.5 h-3.5" /> รอ อบก. รับรอง 500 tCO2e
@@ -114,7 +114,7 @@ function MuniMain({ runAI, approveFactory }) {
             <span className="text-xs text-slate-500 font-medium block">มูลค่ากองทุนหมุนเวียนจังหวัดนนท์ (ส่วน 40%)</span>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-extrabold text-slate-800">78,314,400 <span className="text-sm font-normal text-slate-500">บาท</span></span>
-              <span className="text-xs text-rose-600 font-semibold bg-rose-100 px-1.5 rounded">-30.6%</span>
+              <span className="text-xs text-emerald-600 font-semibold bg-emerald-100 px-1.5 rounded">-30.6%</span>
             </div>
             <span className="text-xs text-slate-500 block mt-1">จากเงินสะสมกองทุนทั้งหมด 195,786,000 บาท</span>
           </div>
@@ -326,28 +326,28 @@ function MuniFactory({ exportData, factoryApproved }) {
             <span className="text-xs text-slate-400 block">น้ำหนักขยะที่นำไปใช้ประโยชน์ทั้งหมด (ปี 2567)</span>
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-bold block text-white">1,253 <span className="text-xs font-normal text-slate-400">ตัน / ปี</span></span>
-              <span className="text-[10px] text-rose-400 font-bold bg-rose-950/60 px-1 rounded">-61.9%</span>
+              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 px-1 rounded">-61.9%</span>
             </div>
           </div>
           <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block">ปริมาณขยะที่นำไปรีไซเคิลสำเร็จ (Recycled)</span>
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-bold block text-emerald-400">1,145 <span className="text-xs font-normal text-slate-400">ตัน / ปี</span></span>
-              <span className="text-[10px] text-rose-400 font-bold bg-rose-950/60 px-1 rounded">-61.9%</span>
+              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 px-1 rounded">-61.9%</span>
             </div>
           </div>
           <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block">ปริมาณก๊าซเรือนกระจกที่ลดได้</span>
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-bold block text-sky-400">229 <span className="text-xs font-normal text-slate-400">ตัน CO2e</span></span>
-              <span className="text-[10px] text-rose-400 font-bold bg-rose-950/60 px-1 rounded">-61.9%</span>
+              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 px-1 rounded">-61.9%</span>
             </div>
           </div>
           <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700/60">
             <span className="text-xs text-slate-400 block">คาร์บอนเครดิตสะสมที่ได้รับการรับรอง</span>
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-bold block text-amber-400">229 <span className="text-xs font-normal text-slate-400">ตัน CO2e</span></span>
-              <span className="text-[10px] text-rose-400 font-bold bg-rose-950/60 px-1 rounded">-61.9%</span>
+              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 px-1 rounded">-61.9%</span>
             </div>
           </div>
         </div>
@@ -551,7 +551,26 @@ function MuniWaste() {
 }
 
 /* ---------------- SUB-TAB: COMMUNITY ---------------- */
-function MuniCommunity({ v, villageFilter, setVillageFilter, exportData }) {
+function MuniCommunity({ v, villages, villageFilter, setVillageFilter, exportData }) {
+  // ----- เตรียมข้อมูล Pie chart: สัดส่วนเงินปันผล 60% คืนหมู่บ้าน แบ่งตามหมู่บ้าน -----
+  const toNum = (s) => Number(String(s).replace(/[^\d.]/g, '')) || 0;
+  const PIE_COLORS = { a: '#6366f1', b: '#f59e0b', c: '#10b981' };
+  const PIE_NAMES = { a: 'แสนสุขนนท์ A', b: 'นนท์วิลล์ B', c: 'ร่มรื่นนนทบุรี C' };
+  const shareEntries = Object.entries(villages || {}).map(([id, vv]) => ({
+    id,
+    name: PIE_NAMES[id] || id,
+    color: PIE_COLORS[id] || '#94a3b8',
+    value: toNum(vv.share),
+  }));
+  const shareTotal = shareEntries.reduce((sum, s) => sum + s.value, 0) || 1;
+  let pieAcc = 0; // เปอร์เซ็นต์สะสม เพื่อกำหนดจุดเริ่มของแต่ละชิ้น (เริ่มที่ 12 นาฬิกา)
+  const pieSlices = shareEntries.map((s) => {
+    const pct = (s.value / shareTotal) * 100;
+    const slice = { ...s, pct, offset: 25 - pieAcc };
+    pieAcc += pct;
+    return slice;
+  });
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -565,7 +584,7 @@ function MuniCommunity({ v, villageFilter, setVillageFilter, exportData }) {
               <span className="text-xs text-slate-500 block">ปริมาณขยะรีไซเคิลที่เก็บได้รวม (ทั้งจังหวัด)</span>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold block text-slate-800">21,754 <span className="text-xs font-normal text-slate-400">ตัน</span></span>
-                <span className="text-xs text-rose-600 font-semibold bg-rose-100 px-1 rounded">-30.6%</span>
+                <span className="text-xs text-emerald-600 font-semibold bg-emerald-100 px-1 rounded">-30.6%</span>
               </div>
             </div>
             <div className="p-4 bg-rose-50/70 rounded-xl border border-rose-100">
@@ -599,6 +618,75 @@ function MuniCommunity({ v, villageFilter, setVillageFilter, exportData }) {
             </div>
           </div>
           <p className="text-[10px] text-slate-400 leading-normal">*ส่วนแบ่งตามข้อตกลงเทศบาลและนิติบุคคลเพื่อรณรงค์ลูกบ้านแยกขยะแห้งให้ได้ประสิทธิภาพสูงสุด</p>
+        </div>
+      </div>
+
+      {/* Pie chart: สัดส่วนเงินปันผลคืนหมู่บ้าน (60%) แบ่งตามหมู่บ้าน */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div className="border-b border-slate-100 pb-3">
+          <h4 className="font-bold text-slate-800 text-sm md:text-base flex items-center gap-2">
+            <Icon name="pie-chart" className="text-emerald-600 w-5 h-5" />
+            สัดส่วนเงินปันผลคืนหมู่บ้าน (60%) แบ่งตามหมู่บ้าน
+          </h4>
+          <p className="text-xs text-slate-500 mt-1">เปรียบเทียบยอดเงินส่วนแบ่งสะสมที่แต่ละหมู่บ้านได้รับจากการคัดแยกขยะแห้ง</p>
+        </div>
+        <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
+          {/* โดนัทชาร์ต */}
+          <div className="relative w-44 h-44 flex-shrink-0">
+            <svg viewBox="0 0 36 36" className="w-full h-full">
+              <circle cx="18" cy="18" r="15.915" fill="none" stroke="#f1f5f9" strokeWidth="4" />
+              {pieSlices.map((s) => (
+                <circle
+                  key={s.id}
+                  cx="18"
+                  cy="18"
+                  r="15.915"
+                  fill="none"
+                  stroke={s.color}
+                  strokeWidth="4"
+                  pathLength="100"
+                  strokeDasharray={`${s.pct} ${100 - s.pct}`}
+                  strokeDashoffset={s.offset}
+                  strokeLinecap="butt"
+                />
+              ))}
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-[10px] text-slate-400 font-medium">รวมทั้งหมด</span>
+              <span className="text-base font-extrabold text-slate-800">{shareTotal.toLocaleString()}</span>
+              <span className="text-[10px] text-slate-400">บาท</span>
+            </div>
+          </div>
+
+          {/* Legend แบบกระชับ — ตัวเลขอยู่ชิดชื่อ ไม่ถูกดันไปขวาสุด */}
+          <div className="w-full lg:w-auto space-y-2.5">
+            {pieSlices.map((s) => (
+              <div key={s.id} className="flex items-center gap-2.5 text-xs">
+                <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: s.color }}></span>
+                <span className="font-semibold text-slate-700">หมู่บ้าน{s.name}</span>
+                <span className="font-bold text-slate-800">{s.value.toLocaleString()} บาท</span>
+                <span className="text-[11px] text-slate-400">({s.pct.toFixed(1)}%)</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Visualization เติมพื้นที่ว่างฝั่งขวา — กราฟแท่งแนวนอนเปรียบเทียบสัดส่วน */}
+          <div className="flex-1 w-full space-y-3 lg:border-l lg:border-slate-100 lg:pl-8">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+              เปรียบเทียบสัดส่วนรายหมู่บ้าน
+            </span>
+            {pieSlices.map((s) => (
+              <div key={s.id} className="space-y-1">
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="font-semibold text-slate-600">หมู่บ้าน{s.name}</span>
+                  <span className="font-extrabold" style={{ color: s.color }}>{s.pct.toFixed(1)}%</span>
+                </div>
+                <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${s.pct}%`, backgroundColor: s.color }}></div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

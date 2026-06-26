@@ -14,5 +14,5 @@ export const ROLE_NAMES = {
   municipality: 'เจ้าหน้าที่ฝ่ายปกครอง เทศบาลเมืองนนทบุรี',
   village: 'นิติบุคคลหมู่บ้าน แสนสุขนนท์ A',
   factory: 'ผู้แทนสถานประกอบการ โรงงาน C (นนทบุรี)',
-  collector: 'พนักงานเก็บขยะประจำรถ (Collector Terminal)',
+  collector: 'เจ้าหน้าที่ขนขยะมูลฝอยประจำรถ (Collector Terminal)',
 };

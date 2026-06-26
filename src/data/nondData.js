@@ -66,7 +66,7 @@ export const SIMULATED_SCALE_WEIGHTS = [
 // บันทึกการจัดเก็บเริ่มต้น (สาธิต) — village ใช้ key 'a'|'b'|'c'
 // ชุดนี้สังกัดหมู่บ้าน A เพื่อให้ทั้งหน้า Collector และ Village (แสนสุขนนท์ A) เห็นตรงกัน
 export const INITIAL_COLLECTIONS = [
-  { id: 'seed-1', time: '08:15:22', houseId: '12/34', village: 'a', wet: 2.5, dry: 1.2, hazard: 0.0, spoiled: 0.0, synced: true },
-  { id: 'seed-2', time: '08:20:10', houseId: '12/35', village: 'a', wet: 3.1, dry: 0.5, hazard: 0.1, spoiled: 1.5, synced: true },
-  { id: 'seed-3', time: '08:24:45', houseId: '12/36', village: 'a', wet: 1.2, dry: 2.8, hazard: 0.0, spoiled: 0.0, synced: true },
+  { id: 'seed-1', date: '2026-06-25', time: '08:15:22', houseId: '12/34', village: 'a', wet: 2.5, dry: 1.2, hazard: 0.0, spoiled: 0.0, synced: true },
+  { id: 'seed-2', date: '2026-06-25', time: '08:20:10', houseId: '12/35', village: 'a', wet: 3.1, dry: 0.5, hazard: 0.1, spoiled: 1.5, synced: true },
+  { id: 'seed-3', date: '2026-06-26', time: '08:24:45', houseId: '12/36', village: 'a', wet: 1.2, dry: 2.8, hazard: 0.0, spoiled: 0.0, synced: true },
 ];

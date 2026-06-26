@@ -18,16 +18,30 @@ import { VILLAGE_OPTIONS, VILLAGE_NAMES, SIMULATED_SCALE_WEIGHTS } from '../../d
 
 const EMPTY_FORM = { houseId: '', wet: '', dry: '', hazard: '', spoiled: '' };
 const fmt = (n) => Number(n || 0).toFixed(2);
+// แสดงวันที่ ISO (YYYY-MM-DD) เป็นรูปแบบไทย เช่น 25 มิ.ย. 2569
+const fmtDate = (iso) =>
+  iso ? new Date(iso).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
 export default function CollectorView() {
   const { collections, addCollection, showToast } = useApp();
 
   const [village, setVillage] = useState('a'); // พื้นที่ปฏิบัติงานที่เลือก
+  const [dateFilter, setDateFilter] = useState('all'); // ตัวกรองวันที่ ('all' = ทุกวันที่)
   const [form, setForm] = useState(EMPTY_FORM);
   const scaleCounter = useRef(0); // วนค่าน้ำหนักจำลองจากตาชั่ง
 
-  // เฉพาะบันทึกของหมู่บ้านที่กำลังปฏิบัติงาน (ใหม่อยู่บนสุด)
-  const rows = useMemo(() => collections.filter((r) => r.village === village), [collections, village]);
+  // บันทึกทั้งหมดของหมู่บ้านที่กำลังปฏิบัติงาน (ก่อนกรองวันที่)
+  const villageRows = useMemo(() => collections.filter((r) => r.village === village), [collections, village]);
+  // รายการวันที่ที่มีข้อมูล (ใช้สร้างตัวเลือกในตัวกรอง) เรียงล่าสุดก่อน
+  const dateOptions = useMemo(() => {
+    const set = new Set(villageRows.map((r) => r.date).filter(Boolean));
+    return Array.from(set).sort().reverse();
+  }, [villageRows]);
+  // เฉพาะบันทึกที่ผ่านตัวกรองวันที่ (ใหม่อยู่บนสุด)
+  const rows = useMemo(
+    () => villageRows.filter((r) => dateFilter === 'all' || r.date === dateFilter),
+    [villageRows, dateFilter],
+  );
 
   // ยอดรวมของรอบการเก็บนี้ (ตาม footer ในไฟล์อ้างอิง)
   const totals = useMemo(
@@ -86,14 +100,14 @@ export default function CollectorView() {
         <div className="space-y-1">
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Icon name="truck" className="w-6 h-6 text-emerald-300" />
-            ระบบบันทึกข้อมูลรถเก็บขยะ (Collector Terminal)
+            ระบบบันทึกข้อมูลเจ้าหน้าที่ขนขยะมูลฝอย (Collector Terminal)
           </h2>
           <p className="text-emerald-100 text-sm mt-1">
             รับข้อมูลจากตาชั่งบลูทูธดิจิทัล และบันทึกปริมาณขยะแยกประเภท รวมถึงขยะสูญเสีย (ขยะเสีย)
           </p>
         </div>
         <div className="bg-emerald-800/80 px-4 py-2 rounded-xl border border-emerald-600 text-right flex-shrink-0">
-          <span className="block text-[10px] text-emerald-300 font-bold uppercase">พนักงานประจำรถ</span>
+          <span className="block text-[10px] text-emerald-300 font-bold uppercase">เจ้าหน้าที่ขนขยะมูลฝอยประจำรถ</span>
           <span className="block text-sm font-semibold">นายสมหมาย รักสะอาด</span>
           <span className="block text-xs text-emerald-200">ทะเบียน: นน-9999</span>
         </div>
@@ -103,17 +117,37 @@ export default function CollectorView() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         {/* Area filter + simulated Bluetooth scale */}
         <div className="p-6 border-b border-slate-100 bg-slate-50 flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="space-y-2 flex-grow">
-            <label className="text-sm font-bold text-slate-700 block">กรองพื้นที่ปฏิบัติงาน (เลือกหมู่บ้าน)</label>
-            <select
-              value={village}
-              onChange={(e) => setVillage(e.target.value)}
-              className="w-full md:w-72 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all"
-            >
-              {VILLAGE_OPTIONS.map((v) => (
-                <option key={v.id} value={v.id}>{v.name}</option>
-              ))}
-            </select>
+          <div className="flex flex-col sm:flex-row gap-4 flex-grow">
+            <div className="space-y-2 flex-grow">
+              <label className="text-sm font-bold text-slate-700 block">กรองพื้นที่ปฏิบัติงาน (เลือกหมู่บ้าน)</label>
+              <select
+                value={village}
+                onChange={(e) => {
+                  setVillage(e.target.value);
+                  setDateFilter('all'); // รีเซ็ตตัวกรองวันที่เมื่อเปลี่ยนหมู่บ้าน
+                }}
+                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all"
+              >
+                {VILLAGE_OPTIONS.map((v) => (
+                  <option key={v.id} value={v.id}>{v.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2 sm:w-56">
+              <label className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                <Icon name="calendar" className="w-4 h-4 text-emerald-600" /> กรองวันที่
+              </label>
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all"
+              >
+                <option value="all">ทุกวันที่</option>
+                {dateOptions.map((d) => (
+                  <option key={d} value={d}>{fmtDate(d)}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Simulated Bluetooth Connection */}
@@ -217,7 +251,8 @@ export default function CollectorView() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-100 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                <th className="p-3 pl-6 border-b border-slate-200">เวลาที่บันทึก</th>
+                <th className="p-3 pl-6 border-b border-slate-200">วันที่</th>
+                <th className="p-3 border-b border-slate-200">เวลาที่บันทึก</th>
                 <th className="p-3 border-b border-slate-200">เลขที่บ้าน / ID</th>
                 <th className="p-3 text-right border-b border-slate-200 bg-amber-50/50">ขยะเปียก (กก.)</th>
                 <th className="p-3 text-right border-b border-slate-200 bg-emerald-50/50">ขยะแห้ง (กก.)</th>
@@ -229,8 +264,8 @@ export default function CollectorView() {
             <tbody className="text-sm divide-y divide-slate-100">
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center text-xs text-slate-400">
-                    ยังไม่มีรายการเก็บขยะในหมู่บ้านนี้ — กรอกข้อมูลด้านบนเพื่อเริ่มบันทึก
+                  <td colSpan={8} className="p-6 text-center text-xs text-slate-400">
+                    ยังไม่มีรายการเก็บขยะในหมู่บ้านนี้ตามวันที่ที่เลือก — กรอกข้อมูลด้านบนหรือปรับตัวกรองวันที่
                   </td>
                 </tr>
               )}
@@ -241,7 +276,8 @@ export default function CollectorView() {
                     key={r.id}
                     className={`transition-colors ${isPenalty ? 'hover:bg-rose-50/30 bg-rose-50/10' : 'hover:bg-slate-50'}`}
                   >
-                    <td className="p-3 pl-6 text-xs text-slate-500">{r.time}</td>
+                    <td className="p-3 pl-6 text-xs text-slate-500 whitespace-nowrap">{fmtDate(r.date)}</td>
+                    <td className="p-3 text-xs text-slate-500">{r.time}</td>
                     <td className="p-3 font-semibold text-slate-800">{r.houseId}</td>
                     <td className="p-3 text-right text-amber-700 font-medium bg-amber-50/20">{fmt(r.wet)}</td>
                     <td className="p-3 text-right text-emerald-700 font-medium bg-emerald-50/20">{fmt(r.dry)}</td>
@@ -262,7 +298,7 @@ export default function CollectorView() {
             </tbody>
             <tfoot className="bg-slate-50 border-t-2 border-slate-200 font-bold text-sm">
               <tr>
-                <td colSpan={2} className="p-3 pl-6 text-right text-slate-600">
+                <td colSpan={3} className="p-3 pl-6 text-right text-slate-600">
                   รวมรอบการเก็บนี้ ({VILLAGE_NAMES[village]})
                 </td>
                 <td className="p-3 text-right text-amber-700">{fmt(totals.wet)}</td>

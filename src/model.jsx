@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Sliders, TrendingDown, Leaf, Info, Factory, Calendar } from "lucide-react";
+import { Sliders, TrendingDown, Leaf, Info, Factory, Calendar, TreePine } from "lucide-react";
 
 /* ============================================================================
  *  NonD — ตัวจำลองการลดขยะ & คาร์บอนเครดิต (Scenario Simulator)
@@ -113,6 +113,7 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
   const [rampMonths, setRampMonths] = useState(12); // ระยะปรับตัว
   const [horizon, setHorizon] = useState(36); // ช่วงพยากรณ์ (เดือน)
   const [emissionFactor, setEmissionFactor] = useState(0.94); // tCO₂e ต่อขยะ 1 ตันที่หลีกเลี่ยง
+  const [granularity, setGranularity] = useState("month"); // ความละเอียดของกราฟ: รายเดือน / รายปี
 
   // ใช้อนุกรมจริงจากเว็บถ้ามี (ต้องยาวพอจับฤดูกาล) ไม่งั้น fallback เป็นข้อมูลตัวอย่าง
   const series = historical && historical.length >= 12 ? historical : SAMPLE_HISTORICAL;
@@ -172,6 +173,76 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
 
   const fmt = (x) => Math.round(x).toLocaleString("th-TH");
 
+  // เทียบเท่าการปลูกต้นไม้จากคาร์บอนเครดิตสะสม (อ้างอิงทั่วไป ~21 กก.CO₂ ต่อต้นต่อปี)
+  const KG_CO2_PER_TREE = 21;
+  const treesEquivalent = (model.cumCredits * 1000) / KG_CO2_PER_TREE;
+
+  // จัดข้อมูลกราฟตามความละเอียดที่เลือก (รายเดือน = ตามเดิม / รายปี = รวมยอดต่อปี)
+  const displayRows = useMemo(() => {
+  if (granularity === "month") return model.rows;
+
+  const n = series.length;               // จำนวนเดือนข้อมูลจริง
+  const byYear = new Map();
+  const ensure = (year) => {
+    if (!byYear.has(year))
+      byYear.set(year, {
+        year,
+        name: `พ.ศ. ${year}`,
+        historical: 0, baseline: 0, withPlatform: 0, withPlatformBase: 0, avoided: 0,
+        hasHist: false, hasFc: false,
+      });
+    return byYear.get(year);
+  };
+
+  model.rows.forEach((r) => {
+    const year = startYear + Math.floor(r.idx / 12);
+    const o = ensure(year);
+
+    if (r.historical != null) {
+      o.historical += r.historical;
+      o.hasHist = true;
+    }
+
+    // ★ นับเฉพาะเดือนพยากรณ์จริง (idx >= n) — ไม่นับ "เดือนเชื่อม" (n-1)
+    //   เพื่อไม่ให้ค่าเดือนเดียวไปทำให้ยอดรวมรายปีของปีรอยต่อแหว่ง
+    if (r.idx >= n) {
+      o.baseline += r.baseline ?? 0;
+      o.withPlatform += r.withPlatform ?? 0;
+      o.withPlatformBase += r.withPlatformBase ?? 0;
+      o.avoided += r.avoided ?? 0;
+      o.hasFc = true;
+    }
+  });
+
+  // ★ สร้างจุดเชื่อมระดับปี: ปีสุดท้ายที่มีข้อมูลจริง
+  //   ให้เส้นพยากรณ์ออกจาก "ยอดรวมจริงของปีนั้น" → เชื่อมต่อเนียนกับเส้นข้อมูลจริง
+  const lastHistYear = startYear + Math.floor((n - 1) / 12);
+  const bridge = byYear.get(lastHistYear);
+  if (bridge && bridge.hasHist) {
+    bridge.baseline = bridge.historical;
+    bridge.withPlatform = bridge.historical;
+    bridge.withPlatformBase = bridge.historical;
+    bridge.avoided = 0;
+    bridge.hasFc = true;
+  }
+
+  return Array.from(byYear.values())
+    .sort((a, b) => a.year - b.year)
+    .map((o) => ({
+      name: o.name,
+      historical: o.hasHist ? Math.round(o.historical) : null,
+      baseline: o.hasFc ? Math.round(o.baseline) : null,
+      withPlatform: o.hasFc ? Math.round(o.withPlatform) : null,
+      withPlatformBase: o.hasFc ? Math.round(o.withPlatformBase) : null,
+      avoided: o.hasFc ? Math.round(o.avoided) : null,
+    }));
+}, [granularity, model.rows, startYear, series.length]);
+
+  const launchName =
+    granularity === "month"
+      ? model.rows[model.launchIdx]?.name
+      : `พ.ศ. ${startYear + Math.floor(model.launchIdx / 12)}`;
+
   return (
     <div className="w-full bg-slate-50 p-5 rounded-2xl text-slate-800">
       {/* หัวข้อ */}
@@ -209,7 +280,7 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
       </div>
 
       {/* การ์ดสรุป */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         <SummaryCard
           icon={<TrendingDown size={18} />}
           tone="emerald"
@@ -223,6 +294,13 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
           value={`${fmt(model.cumCredits)} tCO₂e`}
         />
         <SummaryCard
+          icon={<TreePine size={18} />}
+          tone="green"
+          label="เทียบเท่าการปลูกต้นไม้ 🌳"
+          value={`${fmt(treesEquivalent)} ต้น`}
+          sub="ดูดซับคาร์บอนได้เท่ากับเครดิตสะสม"
+        />
+        <SummaryCard
           icon={<Calendar size={18} />}
           tone="slate"
           label="อัตราการลด ณ สิ้นช่วง"
@@ -232,14 +310,42 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
 
       {/* กราฟ */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4 mb-5">
+        {/* แถบเลือกความละเอียดของกราฟ: รายเดือน / รายปี */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <Calendar size={14} className="text-emerald-600" />
+            <span>ความละเอียดของกราฟ:</span>
+            <span className="font-semibold text-emerald-700">
+              {granularity === "month" ? "รายเดือน (Monthly)" : "รายปี (Yearly)"}
+            </span>
+          </div>
+          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-semibold">
+            <button
+              onClick={() => setGranularity("month")}
+              className={`px-3 py-1 rounded-md transition ${
+                granularity === "month" ? "bg-emerald-600 text-white" : "text-slate-600 hover:text-emerald-700"
+              }`}
+            >
+              รายเดือน
+            </button>
+            <button
+              onClick={() => setGranularity("year")}
+              className={`px-3 py-1 rounded-md transition ${
+                granularity === "year" ? "bg-emerald-600 text-white" : "text-slate-600 hover:text-emerald-700"
+              }`}
+            >
+              รายปี
+            </button>
+          </div>
+        </div>
         <ResponsiveContainer width="100%" height={340}>
-          <ComposedChart data={model.rows} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
+          <ComposedChart data={displayRows} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
-            {/* แสดงป้ายแกน X ทุก ๆ 6 เดือน (interval={5} = ข้าม 5 เดือนระหว่างป้าย) */}
+            {/* รายเดือน: แสดงป้ายทุก 6 เดือน (interval=5) / รายปี: แสดงทุกปี (interval=0) */}
             <XAxis
               dataKey="name"
               tick={{ fontSize: 11, fill: "#94a3b8" }}
-              interval={5}
+              interval={granularity === "month" ? 5 : 0}
             />
             <YAxis
               tick={{ fontSize: 11, fill: "#94a3b8" }}
@@ -298,7 +404,7 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
             />
 
             <ReferenceLine
-              x={model.rows[model.launchIdx]?.name}
+              x={launchName}
               stroke="#0ea5e9"
               strokeDasharray="4 4"
               label={{ value: "เริ่มใช้", position: "top", fill: "#0ea5e9", fontSize: 11 }}
@@ -387,6 +493,10 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
               onChange={(e) => setEmissionFactor(parseFloat(e.target.value))}
               className="w-full accent-emerald-600"
             />
+            <p className="text-[11px] text-slate-400 mt-2 leading-snug">
+              *ค่าสัมประสิทธิ์ (Emission Factor) ที่ใช้แปลงน้ำหนักขยะที่ลดได้หรือรีไซเคิลได้ 1 ตัน
+              ให้กลายเป็นปริมาณก๊าซเรือนกระจกที่หลีกเลี่ยงได้
+            </p>
           </Control>
         </div>
       </div>
@@ -395,10 +505,11 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
 }
 
 /* ---------- ชิ้นส่วน UI เล็ก ๆ ---------- */
-function SummaryCard({ icon, label, value, tone }) {
+function SummaryCard({ icon, label, value, tone, sub }) {
   const tones = {
     emerald: "bg-emerald-50 text-emerald-700",
     teal: "bg-teal-50 text-teal-700",
+    green: "bg-green-50 text-green-700",
     slate: "bg-slate-100 text-slate-600",
   };
   return (
@@ -406,6 +517,7 @@ function SummaryCard({ icon, label, value, tone }) {
       <div className={`inline-flex p-2 rounded-lg mb-3 ${tones[tone]}`}>{icon}</div>
       <div className="text-xs text-slate-500 mb-1 leading-snug">{label}</div>
       <div className="text-xl font-semibold text-slate-900">{value}</div>
+      {sub && <div className="text-[11px] text-slate-400 mt-1 leading-snug">{sub}</div>}
     </div>
   );
 }

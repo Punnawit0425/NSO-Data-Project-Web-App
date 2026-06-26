@@ -72,8 +72,11 @@ export default function App() {
   // ข้อมูลนี้จะปรากฏทั้งในหน้าพนักงานเก็บขยะและตารางค่าปรับของนิติบุคคลหมู่บ้านทันที
   const addCollection = useCallback((rec) => {
     const id = `rec-${++collectionSeq}-${Date.now()}`;
-    const time = new Date().toLocaleTimeString('th-TH', { hour12: false });
-    const entry = { id, time, synced: false, ...rec };
+    const now = new Date();
+    const time = now.toLocaleTimeString('th-TH', { hour12: false });
+    const pad = (x) => String(x).padStart(2, '0');
+    const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`; // ISO ตามเวลาท้องถิ่น
+    const entry = { id, time, date, synced: false, ...rec };
     setCollections((prev) => [entry, ...prev]);
     // จำลองการซิงค์ขึ้นส่วนกลางสำเร็จหลัง 1 วินาที (เหมือนไฟล์อ้างอิง)
     setTimeout(() => {
