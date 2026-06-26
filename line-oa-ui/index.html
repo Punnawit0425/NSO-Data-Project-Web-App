@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>N-UIP LINE OA UI Mobile Simulator</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css">
+  <!-- LINE LIFF SDK -->
+  <script charset="utf-8" src="https://static.line-scdn.net/liffjs/2.1/sdk.js"></script>
+</head>
+<body>
+
+  <!-- ===== LIFF: FULL SCREEN LOADING STATE ===== -->
+  <div class="liff-loading-screen" id="liff-loading-screen">
+    <div class="loading-content">
+      <div class="line-brand-logo">
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+          <rect width="52" height="52" rx="14" fill="#06C755"/>
+          <path d="M43.5 24.3C43.5 16.1 35.7 9.4 26 9.4C16.3 9.4 8.5 16.1 8.5 24.3C8.5 31.6 14.9 37.7 23.4 38.9C24 39 24.9 39.3 25.1 39.8C25.3 40.3 25.2 41 25.1 41.5L24.7 43.8C24.6 44.3 24.3 45.6 26 44.9C27.7 44.2 35.5 39.3 38.9 35.4C41.3 32.8 43.5 28.8 43.5 24.3Z" fill="white"/>
+        </svg>
+      </div>
+      <div class="loading-spinner"></div>
+      <p class="loading-text">กำลังเชื่อมต่อ LINE...</p>
+    </div>
+  </div>
+
+  <!-- ===== LIFF: LOGIN SCREEN (แสดงเมื่อยังไม่ได้ Login) ===== -->
+  <div class="liff-login-screen" id="liff-login-screen">
+    <div class="login-card">
+      <!-- Top decoration -->
+      <div class="login-top-art">
+        <div class="login-circles">
+          <div class="lc lc1"></div>
+          <div class="lc lc2"></div>
+          <div class="lc lc3"></div>
+        </div>
+        <div class="login-brand-icon">
+          <i class="fa-solid fa-house-chimney"></i>
+        </div>
+      </div>
+
+      <!-- App Info -->
+      <div class="login-app-info">
+        <div class="login-app-name">หมู่บ้านสวนสุข</div>
+        <div class="login-app-sub">N-UIP · Nonthaburi Smart City</div>
+        <p class="login-desc">
+          ระบบจัดการขยะชุมชนอัจฉริยะ<br>
+          ร่วมกันเปลี่ยนขยะ ให้เป็นคุณภาพชีวิตที่ดีขึ้น 💚
+        </p>
+      </div>
+
+      <!-- Features teaser -->
+      <div class="login-features">
+        <div class="login-feature-item">
+          <span class="feat-icon feat-green"><i class="fa-solid fa-recycle"></i></span>
+          <span>ติดตามคะแนนรีไซเคิลของบ้านคุณ</span>
+        </div>
+        <div class="login-feature-item">
+          <span class="feat-icon feat-amber"><i class="fa-solid fa-piggy-bank"></i></span>
+          <span>ดูเงินกองทุนชุมชนแบบ Real-time</span>
+        </div>
+        <div class="login-feature-item">
+          <span class="feat-icon feat-blue"><i class="fa-solid fa-bell"></i></span>
+          <span>รับแจ้งเตือนตารางรถขยะในพื้นที่</span>
+        </div>
+      </div>
+
+      <!-- LINE Login Button -->
+      <button class="line-login-btn" id="line-login-btn">
+        <svg width="22" height="22" viewBox="0 0 52 52" fill="none">
+          <rect width="52" height="52" rx="14" fill="white"/>
+          <path d="M43.5 24.3C43.5 16.1 35.7 9.4 26 9.4C16.3 9.4 8.5 16.1 8.5 24.3C8.5 31.6 14.9 37.7 23.4 38.9C24 39 24.9 39.3 25.1 39.8C25.3 40.3 25.2 41 25.1 41.5L24.7 43.8C24.6 44.3 24.3 45.6 26 44.9C27.7 44.2 35.5 39.3 38.9 35.4C41.3 32.8 43.5 28.8 43.5 24.3Z" fill="#06C755"/>
+        </svg>
+        Login ด้วย LINE
+      </button>
+
+      <!-- Dev mode note -->
+      <div class="dev-mode-note" id="dev-mode-note">
+        <i class="fa-solid fa-code"></i>
+        โหมดพัฒนา — ยังไม่มี LIFF ID
+        <a href="https://developers.line.biz" target="_blank">ตั้งค่าที่นี่</a>
+      </div>
+
+      <!-- Skip for preview -->
+      <button class="skip-login-btn" id="skip-login-btn">
+        ทดสอบโดยไม่ Login (Preview Mode)
+      </button>
+
+      <p class="login-terms">
+        การ Login ถือว่ายอมรับ <a href="#">นโยบายความเป็นส่วนตัว</a> ของระบบ N-UIP
+      </p>
+    </div>
+  </div>
+
+  <!-- PORTAL WRAPPER (Desktop View Backdrop) -->
+  <div class="portal-container">
+    
+    <!-- LEFT SIDEBAR: Instructions & Guide -->
+    <div class="info-sidebar">
+      <div class="sidebar-header">
+        <div class="logo-badge">N-UIP</div>
+        <h2>LINE OA Simulator</h2>
+        <p class="subtitle">Provincial Citizen Interface</p>
+      </div>
+      
+      <div class="interactive-guide">
+        <h3>💡 วิธีการทดสอบอินเตอร์เฟซ</h3>
+        <ul>
+          <li>
+            <strong class="highlight-menu">คลิกปุ่มแผง Rich Menu (6 ช่อง)</strong> ด้านล่างจอโทรศัพท์เพื่อเปิดใช้งานฟังก์ชันต่างๆ
+          </li>
+          <li>
+            <strong class="highlight-liff">รายงานขยะ / เช็คคะแนน</strong> เพื่อเปิดหน้าต่างจำลอง **LIFF App** (หน้าต่างเบราว์เซอร์ใน LINE)
+          </li>
+          <li>
+            <strong class="highlight-chat">พิมพ์ข้อความแชท</strong> หรือคุยกับ AI Bot เกี่ยวกับตารางเวลาหรือการจัดการขยะของนนทบุรี
+          </li>
+          <li>
+            <strong class="highlight-toggle">ย่อ/ขยาย Rich Menu</strong> โดยกดปุ่มตารางสี่เหลี่ยมด้านล่างซ้ายข้างช่องพิมพ์
+          </li>
+        </ul>
+      </div>
+
+      <div class="system-status">
+        <div class="status-item">
+          <span>LINE Messaging API:</span>
+          <span class="status-badge status-green">Online</span>
+        </div>
+        <div class="status-item">
+          <span>LIFF Webview SDK v2.21:</span>
+          <span class="status-badge status-green">Ready</span>
+        </div>
+        <div class="status-item">
+          <span>N-UIP Decision Core:</span>
+          <span class="status-badge status-blue">Connected</span>
+        </div>
+      </div>
+      
+      <div class="footer-info">
+        Nonthaburi Urban Intelligence Platform // Mobile Sandbox
+      </div>
+    </div>
+
+    <!-- CENTER: Realistic Phone Mockup -->
+    <div class="phone-wrapper">
+      <div class="smartphone-bezel">
+        <!-- Speaker / Notch -->
+        <div class="phone-notch">
+          <div class="dynamic-island"></div>
+        </div>
+        
+        <!-- Status Bar -->
+        <div class="phone-status-bar">
+          <div class="status-time" id="live-time">13:30</div>
+          <div class="status-icons">
+            <i class="fa-solid fa-signal"></i>
+            <i class="fa-solid fa-wifi"></i>
+            <i class="fa-solid fa-battery-full"></i>
+          </div>
+        </div>
+
+        <!-- LINE APP CLIENT CONTAINER -->
+        <div class="line-app-client">
+          
+          <!-- CHAT HEADER -->
+          <header class="chat-header">
+            <div class="header-left">
+              <button class="back-btn"><i class="fa-solid fa-chevron-left"></i></button>
+              <div class="avatar-container">
+                <div class="oa-avatar">
+                  <i class="fa-solid fa-leaf"></i>
+                </div>
+                <div class="verified-badge"><i class="fa-solid fa-shield-halved"></i></div>
+              </div>
+              <div class="oa-title-box">
+                <div class="oa-name">N-UIP นนทบุรี <span class="badge-text">Official</span></div>
+                <div class="oa-status"><span class="pulse-dot"></span>ปกติ ตอบกลับทันที</div>
+              </div>
+            </div>
+            <div class="header-right">
+              <button class="header-icon"><i class="fa-solid fa-magnifying-glass"></i></button>
+              <button class="header-icon"><i class="fa-solid fa-bars"></i></button>
+            </div>
+          </header>
+
+          <!-- CHAT BODY (SCROLLABLE MESSAGES) -->
+          <div class="chat-body" id="chat-messages">
+            <!-- Timestamp -->
+            <div class="chat-timestamp">วันนี้</div>
+
+            <!-- Message 1: Welcome -->
+            <div class="msg-row bot-msg">
+              <div class="msg-avatar"><i class="fa-solid fa-leaf"></i></div>
+              <div class="msg-bubble-group">
+                <div class="msg-bubble text-bubble">
+                  ยินดีต้อนรับสู่ระบบข้อมูลเมืองและรายงานปัญหาขยะอัจฉริยะ นนทบุรี (N-UIP) 🌳🤖<br><br>
+                  ท่านสามารถรายงานปัญหาขยะล้นถัง ถังขยะชำรุด หรือตรวจสอบคะแนนสะสมคาร์บอนจากการรีไซเคิลได้ทันทีผ่านเมนูด้านล่างค่ะ
+                </div>
+              </div>
+            </div>
+
+            <!-- Message 2: Quick actions card -->
+            <div class="msg-row bot-msg">
+              <div class="msg-avatar"><i class="fa-solid fa-leaf"></i></div>
+              <div class="msg-bubble-group">
+                <div class="msg-bubble card-bubble">
+                  <div class="card-image-placeholder">
+                    <i class="fa-solid fa-recycle card-bg-icon"></i>
+                    <div class="card-overlay-text">ร่วมสร้างนนทบุรีสะอาด</div>
+                  </div>
+                  <div class="card-content">
+                    <h4>บริการประชาชนออนไลน์</h4>
+                    <p>ระบบแจ้งเตือนตารางรถขยะ แผนที่จุดทิ้งขยะ และสะสมแต้มคาร์บอนเครดิต</p>
+                    <div class="card-actions">
+                      <button class="card-action-btn" onclick="openLiff('report')">🚨 แจ้งขยะล้น / จุดสกปรก</button>
+                      <button class="card-action-btn" onclick="openLiff('points')">💚 ดูคะแนนคาร์บอนของฉัน</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+
+          <!-- CHAT BOTTOM PANEL (INPUT & RICH MENU CONTAINER) -->
+          <footer class="chat-footer">
+            <!-- INPUT BAR -->
+            <div class="input-bar">
+              <button class="rich-menu-toggle-btn" id="rich-menu-toggle" title="เปิด/ปิด เมนู">
+                <i class="fa-solid fa-grip-vertical"></i>
+              </button>
+              <div class="input-field-wrapper">
+                <input type="text" id="chat-input" placeholder="ถามข้อมูลรถขยะ วิธีคัดแยกขยะ หรือส่งข้อความ..." autocomplete="off">
+              </div>
+              <button class="send-message-btn" id="send-btn">
+                <i class="fa-solid fa-paper-plane"></i>
+              </button>
+            </div>
+
+            <!-- RICH MENU (6 GRIDS) -->
+            <div class="rich-menu-container active" id="rich-menu">
+              <div class="rich-menu-grid">
+                <!-- Grid 1: Report Waste -->
+                <button class="rich-grid-item item-red" onclick="openLiff('report')">
+                  <div class="grid-icon"><i class="fa-solid fa-trash-can"></i></div>
+                  <div class="grid-label">รายงานขยะล้น</div>
+                  <div class="grid-sub">แจ้งปัญหาจุดสกปรก</div>
+                </button>
+                <!-- Grid 2: Points -->
+                <button class="rich-grid-item item-green" onclick="openLiff('points')">
+                  <div class="grid-icon"><i class="fa-solid fa-award"></i></div>
+                  <div class="grid-label">สะสมคะแนน</div>
+                  <div class="grid-sub">เช็คแต้มรีไซเคิล</div>
+                </button>
+                <!-- Grid 3: AI Chat -->
+                <button class="rich-grid-item item-blue" id="rich-ai-btn">
+                  <div class="grid-icon"><i class="fa-solid fa-robot"></i></div>
+                  <div class="grid-label">คุยกับ AI Bot</div>
+                  <div class="grid-sub">สอบถามวิธีคัดแยกขยะ</div>
+                </button>
+                <!-- Grid 4: Garbage Schedule -->
+                <button class="rich-grid-item item-amber" id="rich-schedule-btn">
+                  <div class="grid-icon"><i class="fa-solid fa-calendar-days"></i></div>
+                  <div class="grid-label">ตารางเดินรถ</div>
+                  <div class="grid-sub">ดูเวลาเก็บขยะในพื้นที่</div>
+                </button>
+                <!-- Grid 5: Contact Live Agent -->
+                <button class="rich-grid-item item-purple" id="rich-agent-btn">
+                  <div class="grid-icon"><i class="fa-solid fa-headset"></i></div>
+                  <div class="grid-label">ติดต่อเจ้าหน้าที่</div>
+                  <div class="grid-sub">ร้องเรียนเรื่องทั่วไป</div>
+                </button>
+                <!-- Grid 6: Alerts -->
+                <button class="rich-grid-item item-pink" id="rich-alert-btn">
+                  <div class="grid-icon"><i class="fa-solid fa-bell"></i></div>
+                  <div class="grid-label">ตั้งค่าแจ้งเตือน</div>
+                  <div class="grid-sub">เปิดรับข่าวสารจังหวัด</div>
+                </button>
+              </div>
+              <div class="rich-menu-bar">
+                <span>N-UIP Smart Service Menu</span>
+              </div>
+            </div>
+          </footer>
+
+          <!-- LIFF WEBVIEW MODALS OVERLAY -->
+          <div class="liff-webview-overlay" id="liff-overlay">
+            
+            <!-- LIFF HEADER -->
+            <header class="liff-header">
+              <div class="liff-header-left">
+                <button class="liff-close-btn" onclick="closeLiff()"><i class="fa-solid fa-xmark"></i></button>
+                <div class="liff-title-box">
+                  <span class="liff-title" id="liff-app-title">รายงานขยะล้น / จุดสกปรก</span>
+                  <span class="liff-url">liff.line.me/16578912-nuip</span>
+                </div>
+              </div>
+              <div class="liff-header-right">
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+              </div>
+            </header>
+
+            <!-- LIFF BODY CONTAINER -->
+            <div class="liff-body">
+              
+              <!-- APP 1: REPORT WASTE FORM -->
+              <div class="liff-page-content" id="liff-report-app">
+                <form id="report-waste-form" onsubmit="handleReportSubmit(event)">
+                  <div class="form-section">
+                    <label class="form-label">ประเภทขยะที่พบ</label>
+                    <div class="waste-type-grid">
+                      <label class="waste-type-option">
+                        <input type="radio" name="waste_type" value="ขยะทั่วไป" checked>
+                        <span class="option-card">
+                          <i class="fa-solid fa-dumpster type-icon text-gray"></i>
+                          <span>ขยะทั่วไป</span>
+                        </span>
+                      </label>
+                      <label class="waste-type-option">
+                        <input type="radio" name="waste_type" value="ขยะอินทรีย์ / อาหาร">
+                        <span class="option-card">
+                          <i class="fa-solid fa-apple-whole type-icon text-amber"></i>
+                          <span>อินทรีย์ / อาหาร</span>
+                        </span>
+                      </label>
+                      <label class="waste-type-option">
+                        <input type="radio" name="waste_type" value="ขยะรีไซเคิล">
+                        <span class="option-card">
+                          <i class="fa-solid fa-recycle type-icon text-green"></i>
+                          <span>รีไซเคิล</span>
+                        </span>
+                      </label>
+                      <label class="waste-type-option">
+                        <input type="radio" name="waste_type" value="ขยะอันตราย / สารเคมี">
+                        <span class="option-card">
+                          <i class="fa-solid fa-triangle-exclamation type-icon text-red"></i>
+                          <span>อันตราย</span>
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <label class="form-label">แนบรูปภาพจุดสกปรก</label>
+                    <div class="photo-upload-box" onclick="simulatePhotoUpload()">
+                      <div class="upload-inner" id="upload-preview-container">
+                        <i class="fa-solid fa-camera camera-icon"></i>
+                        <span>กดเพื่อถ่ายรูปภาพ หรือ แนบรูป</span>
+                        <p class="upload-tip">รองรับไฟล์ JPG, PNG ขนาดไม่เกิน 5MB</p>
+                      </div>
+                      <input type="hidden" id="attached-photo-val" value="">
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <label class="form-label">ระบุตำแหน่งที่พบ (พิกัด GPS)</label>
+                    <div class="mock-map-box">
+                      <!-- Simulated interactive map elements -->
+                      <div class="map-indicator">
+                        <i class="fa-solid fa-location-dot map-pin"></i>
+                        <div class="map-label-tooltip">ปากเกร็ด นนทบุรี</div>
+                      </div>
+                      <div class="map-grid-pattern"></div>
+                      <div class="map-footer-control">
+                        <span><i class="fa-solid fa-crosshairs"></i> ใช้ตำแหน่งปัจจุบันของฉัน</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-section">
+                    <label class="form-label" for="report-detail">รายละเอียดเพิ่มเติม (ไม่บังคับ)</label>
+                    <textarea id="report-detail" rows="2" placeholder="ระบุจุดสังเกตเพิ่มเติม เช่น หน้าเซเว่น, ปากซอย 5..."></textarea>
+                  </div>
+
+                  <div class="form-actions">
+                    <button type="submit" class="submit-btn" id="report-submit-btn">
+                      ส่งรายงานเข้าสู่ระบบ N-UIP
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- APP 2: SUAN SUK VILLAGE PORTAL (LIFF) -->
+              <div class="liff-page-content hidden" id="liff-points-app">
+                
+                <!-- 1. Header (Top Navigation) -->
+                <div class="suansuk-header">
+                  <div class="suansuk-header-left">
+                    <div class="suansuk-icon-box">
+                      <i class="fa-solid fa-house-chimney"></i>
+                    </div>
+                    <div class="suansuk-title-info">
+                      <div class="suansuk-dropdown-title">
+                        <h4>หมู่บ้านสวนสุข</h4>
+                        <i class="fa-solid fa-chevron-down dropdown-arrow"></i>
+                      </div>
+                      <p>ร่วมกันเปลี่ยนขยะ ให้เป็นคุณภาพชีวิตที่ดีขึ้น 💚</p>
+                    </div>
+                  </div>
+                  <button class="suansuk-bell-btn">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="bell-alert-dot"></span>
+                  </button>
+                </div>
+
+                <!-- 2. Community Fund Card -->
+                <div class="fund-gradient-card">
+                  <div class="fund-card-left">
+                    <div class="fund-label">
+                      <span>เงินกองทุนชุมชน</span>
+                      <i class="fa-solid fa-circle-info info-icon"></i>
+                    </div>
+                    <h2 class="fund-value">48,320 <span class="currency">บาท</span></h2>
+                    <button type="button" class="fund-history-btn" onclick="openFundHistory()">ดูประวัติเงินกองทุน <i class="fa-solid fa-chevron-right arrow"></i></button>
+                  </div>
+                  <div class="fund-card-right">
+                    <!-- Custom SVG Piggy Bank Illustration -->
+                    <div class="piggy-illustration-box">
+                      <svg viewBox="0 0 100 100" width="85" height="85">
+                        <!-- Gold Coin falling -->
+                        <g class="coin-animation">
+                          <circle cx="58" cy="18" r="11" fill="#FBBF24" stroke="#D97706" stroke-width="1.5" />
+                          <circle cx="58" cy="18" r="7" fill="#F59E0B" />
+                          <path d="M57 14 C59 14 60 16 60 18 C60 20 59 22 57 22 C55 22 55 20 55 18 Z" fill="#FFFFFF" opacity="0.8"/>
+                        </g>
+                        <!-- Piggy Body -->
+                        <ellipse cx="50" cy="62" rx="36" ry="26" fill="#FCA5A5" /> <!-- Soft pink body -->
+                        <!-- Piggy Nose/Snout -->
+                        <ellipse cx="14" cy="60" rx="7" ry="10" fill="#FDA4AF" />
+                        <circle cx="12" cy="57" r="2" fill="#E11D48" />
+                        <circle cx="12" cy="63" r="2" fill="#E11D48" />
+                        <!-- Piggy Ear -->
+                        <polygon points="68,40 82,24 82,46" fill="#FDA4AF" />
+                        <polygon points="71,41 80,28 80,44" fill="#F43F5E" />
+                        <!-- Piggy Eye -->
+                        <circle cx="34" cy="52" r="3" fill="#000" />
+                        <circle cx="35" cy="51" r="1" fill="#FFF" />
+                        <!-- Piggy Legs -->
+                        <rect x="30" y="82" width="10" height="12" rx="4" fill="#FDA4AF" />
+                        <rect x="60" y="82" width="10" height="12" rx="4" fill="#FDA4AF" />
+                        <!-- Piggy Tail -->
+                        <path d="M84 62 Q92 56 88 50" fill="none" stroke="#FCA5A5" stroke-width="3" stroke-linecap="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 3. Current Project Card -->
+                <div class="project-progress-card">
+                  <h5 class="section-card-title">โครงการปัจจุบัน</h5>
+                  <div class="project-main-info">
+                    <span class="idea-icon">💡</span>
+                    <span class="project-name">ติดตั้งไฟถนนพลังงานแสงอาทิตย์</span>
+                  </div>
+                  
+                  <!-- Progress Segment Blocks -->
+                  <div class="progress-segment-wrapper">
+                    <div class="progress-blocks-container">
+                      <span class="p-block active"></span>
+                      <span class="p-block active"></span>
+                      <span class="p-block active"></span>
+                      <span class="p-block active"></span>
+                      <span class="p-block active"></span>
+                      <span class="p-block active"></span>
+                      <span class="p-block active"></span>
+                      <span class="p-block active"></span>
+                      <span class="p-block"></span>
+                      <span class="p-block"></span>
+                      <span class="p-block"></span>
+                    </div>
+                    <span class="progress-percentage-label">72%</span>
+                  </div>
+
+                  <!-- Statistics -->
+                  <div class="project-stats-grid">
+                    <div class="stat-col-left">
+                      <span class="stat-lbl">ยอดที่ต้องการ</span>
+                      <span class="stat-val">80,000 บาท</span>
+                    </div>
+                    <div class="stat-col-right">
+                      <span class="stat-lbl">ยอดปัจจุบัน</span>
+                      <span class="stat-val val-green">57,600 บาท</span>
+                    </div>
+                  </div>
+
+                  <button type="button" class="project-detail-btn" onclick="openProjectDetail()">ดูรายละเอียดโครงการ <i class="fa-solid fa-chevron-right arrow"></i></button>
+                </div>
+
+                <!-- 4. Collective Impact Card -->
+                <div class="collective-impact-card">
+                  <h5 class="section-card-title impact-title">
+                    ผลกระทบของเราร่วมกัน (เดือนนี้)
+                    <i class="fa-solid fa-circle-info info-icon"></i>
+                  </h5>
+
+                  <div class="impact-metrics-grid">
+                    <!-- Recycle weight -->
+                    <div class="impact-metric-item">
+                      <div class="metric-icon-circle bg-lightgreen">
+                        <i class="fa-solid fa-recycle"></i>
+                      </div>
+                      <span class="metric-label">รีไซเคิลแล้ว</span>
+                      <span class="metric-value">3,420 <span class="unit">กก.</span></span>
+                    </div>
+                    <!-- Carbon reduced -->
+                    <div class="impact-metric-item">
+                      <div class="metric-icon-circle bg-lightblue">
+                        <i class="fa-solid fa-cloud-sun"></i>
+                      </div>
+                      <span class="metric-label">ลดคาร์บอน</span>
+                      <span class="metric-value">2.1 <span class="unit">tCO₂e</span></span>
+                    </div>
+                    <!-- Trees planted -->
+                    <div class="impact-metric-item">
+                      <div class="metric-icon-circle bg-lightorange">
+                        <i class="fa-solid fa-seedling"></i>
+                      </div>
+                      <span class="metric-label">เทียบเท่าปลูกต้นไม้</span>
+                      <span class="metric-value orange-text">54 <span class="unit">ต้น</span></span>
+                    </div>
+                    <!-- Households -->
+                    <div class="impact-metric-item">
+                      <div class="metric-icon-circle bg-lightgrey">
+                        <i class="fa-solid fa-users-rectangle"></i>
+                      </div>
+                      <span class="metric-label">ครัวเรือนร่วมกิจกรรม</span>
+                      <span class="metric-value">348 <span class="unit">ครัวเรือน</span></span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 5. Recent Activity List Card -->
+                <div class="recent-activities-card">
+                  <div class="activities-header">
+                    <h5 class="section-card-title">กิจกรรมล่าสุดในหมู่บ้าน</h5>
+                    <button type="button" class="view-all-link" onclick="viewAllActivities()">ดูทั้งหมด <i class="fa-solid fa-chevron-right"></i></button>
+                  </div>
+
+                  <div class="activity-log-list">
+                    <!-- Item 1 -->
+                    <div class="activity-log-item">
+                      <div class="activity-left-side">
+                        <div class="activity-icon-bg bg-green-light">
+                          <i class="fa-solid fa-house-user"></i>
+                        </div>
+                        <div class="activity-content-box">
+                          <h6>บ้านเลขที่ 88 รีไซเคิลขยะ 8 กก.</h6>
+                          <p class="points-add-text">+12 คะแนน</p>
+                        </div>
+                      </div>
+                      <span class="activity-time-lbl">วันนี้</span>
+                    </div>
+                    <!-- Item 2 -->
+                    <div class="activity-log-item">
+                      <div class="activity-left-side">
+                        <div class="activity-icon-bg bg-tree-light">
+                          <i class="fa-solid fa-tree"></i>
+                        </div>
+                        <div class="activity-content-box">
+                          <h6>บ้านเลขที่ 123 รีไซเคิลขยะ 15 กก.</h6>
+                          <p class="points-add-text">+20 คะแนน</p>
+                        </div>
+                      </div>
+                      <span class="activity-time-lbl">วันนี้</span>
+                    </div>
+                    <!-- Item 3 -->
+                    <div class="activity-log-item">
+                      <div class="activity-left-side">
+                        <div class="activity-icon-bg bg-blue-light">
+                          <i class="fa-solid fa-thumbs-up"></i>
+                        </div>
+                        <div class="activity-content-box">
+                          <h6>ขอบคุณ! ทุกคนช่วยกันได้ยอด 3 ตันแล้ว</h6>
+                          <p class="points-add-text">+50 คะแนน</p>
+                        </div>
+                      </div>
+                      <span class="activity-time-lbl">วันนี้</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 6. Shortcut Navigation Grid -->
+                <div class="shortcut-menu-section">
+                  <h5 class="section-card-title">เมนูลัด</h5>
+                  <div class="shortcut-menu-grid">
+                    <!-- Item 1 -->
+                    <button type="button" class="shortcut-menu-item" onclick="handleShortcut('sort')">
+                      <div class="shortcut-icon-circle bg-leaf">
+                        <i class="fa-solid fa-leaf"></i>
+                      </div>
+                      <span>แยกขยะ</span>
+                    </button>
+                    <!-- Item 2 -->
+                    <button type="button" class="shortcut-menu-item" onclick="handleShortcut('goal')">
+                      <div class="shortcut-icon-circle bg-target">
+                        <i class="fa-solid fa-bullseye"></i>
+                      </div>
+                      <span>เป้าหมาย</span>
+                    </button>
+                    <!-- Item 3 -->
+                    <button type="button" class="shortcut-menu-item" onclick="handleShortcut('scan')">
+                      <div class="shortcut-icon-circle bg-camera">
+                        <i class="fa-solid fa-camera"></i>
+                      </div>
+                      <span>สแกนขยะ</span>
+                    </button>
+                    <!-- Item 4 -->
+                    <button type="button" class="shortcut-menu-item" onclick="handleShortcut('rank')">
+                      <div class="shortcut-icon-circle bg-trophy">
+                        <i class="fa-solid fa-trophy"></i>
+                      </div>
+                      <span>อันดับ</span>
+                    </button>
+                    <!-- Item 5 -->
+                    <button type="button" class="shortcut-menu-item" onclick="handleShortcut('privilege')">
+                      <div class="shortcut-icon-circle bg-gift">
+                        <i class="fa-solid fa-gift"></i>
+                      </div>
+                      <span>สิทธิพิเศษ</span>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- SUCCESS TOAST OVERLAY -->
+          <div class="toast-overlay" id="success-toast">
+            <div class="toast-card animate-pop">
+              <i class="fa-solid fa-circle-check toast-icon"></i>
+              <div class="toast-content">
+                <h4>ส่งข้อมูลสำเร็จ!</h4>
+                <p id="toast-message">ระบบได้รับข้อมูลของท่านเรียบร้อยแล้ว</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
