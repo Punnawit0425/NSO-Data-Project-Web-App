@@ -7,7 +7,7 @@ const ROLE_TABS = [
   { id: 'village', label: '3. นิติหมู่บ้าน' },
   { id: 'factory', label: '4. โรงงานอุตสาหกรรม' },
   // ฟีเจอร์ใหม่ — บทบาทที่ 5 พนักงานเก็บขยะ (Collector Terminal)
-  { id: 'collector', label: '5. เจ้าหน้าที่ขนขยะมูลฝอย', isNew: true },
+  { id: 'collector', label: '5. เจ้าหน้าที่ขนขยะมูลฝอย'},
 ];
 
 const ACTIVE_BTN = 'role-btn px-3 py-1.5 rounded-lg font-medium transition-all duration-200 bg-emerald-500 text-white shadow-sm';

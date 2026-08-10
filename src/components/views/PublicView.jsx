@@ -130,11 +130,9 @@ export default function PublicView() {
             >
               ดูข้อมูลภาพรวม
             </a>
-            {/* ลิงก์ไปหน้าจำลอง LINE OA (โฟลเดอร์ line-oa-ui) */}
+            {/* ลิงก์ไปหน้าจำลอง LINE OA (public/line-oa-ui — อิง base URL ของ Vite) */}
             <a
-              href="line-oa-ui/index.html"
-              target="_blank"
-              rel="noopener noreferrer"
+              href={`${import.meta.env.BASE_URL}line-oa-ui/index.html`}
               className="text-white font-semibold px-5 py-2.5 rounded-xl transition-all text-sm flex items-center gap-2 shadow-sm hover:opacity-90"
               style={{ backgroundColor: '#06C755' }}
             >
