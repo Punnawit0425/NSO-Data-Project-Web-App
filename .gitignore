@@ -4,3 +4,6 @@ dist
 *.local
 .DS_Store
 *.pdf
+.env
+.env.*
+!.env.example
