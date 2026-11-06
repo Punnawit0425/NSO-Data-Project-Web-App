@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-"""สร้างกราฟความหนาแน่นประชากรรายอำเภอ จังหวัดนนทบุรี ปี 2566
-อ่านข้อมูลจาก clean_data/clean_population.csv แล้วเซฟรูปลงโฟลเดอร์ visualization
+"""Build the population-density-by-district chart for Nonthaburi Province, 2566 (2023)
+สร้างกราฟความหนาแน่นประชากรรายอำเภอ จังหวัดนนทบุรี ปี 2566
+Reads data from data/clean/clean_population.csv and saves the image to the figures folder
+อ่านข้อมูลจาก data/clean/clean_population.csv แล้วเซฟรูปลงโฟลเดอร์ figures
 """
 from pathlib import Path
 
@@ -8,12 +10,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 
+# --- File paths (relative to the script's location, independent of the working directory) ---
 # --- ที่อยู่ไฟล์ (อ้างอิงจากตำแหน่งสคริปต์ ไม่ขึ้นกับ working directory) ---
 ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "clean_data" / "clean_population.csv"
-OUT_DIR = ROOT / "visualization"
+SRC = ROOT / "data" / "clean" / "clean_population.csv"
+OUT_DIR = ROOT / "figures"
 OUT_DIR.mkdir(exist_ok=True)
 
+# --- Load data ---
 # --- โหลดข้อมูล ---
 df = pd.read_csv(SRC, index_col=0)
 density = (
@@ -24,9 +28,10 @@ density = (
 )
 province_avg = df.loc[df["อำเภอ"] == "รวมยอด", "ความหนาแน่นประชากร_2566"].iloc[0]
 
+# --- Styling ---
 # --- ตั้งค่าหน้าตา ---
 plt.rcParams.update({
-    "font.family": "Tahoma",          # ฟอนต์รองรับภาษาไทยบน Windows
+    "font.family": "Tahoma",          # font with Thai support on Windows — ฟอนต์รองรับภาษาไทยบน Windows
     "axes.unicode_minus": False,
     "figure.dpi": 120,
 })
@@ -35,6 +40,7 @@ fig, ax = plt.subplots(figsize=(11, 6.5))
 fig.patch.set_facecolor("white")
 ax.set_facecolor("white")
 
+# Color gradient by density (darker = denser)
 # ไล่เฉดสีตามค่าความหนาแน่น (เข้ม = หนาแน่นมาก)
 cmap = plt.cm.YlOrRd
 norm = plt.Normalize(density["ความหนาแน่นประชากร_2566"].min() * 0.6,
@@ -47,6 +53,7 @@ bars = ax.barh(
     color=colors, edgecolor="white", linewidth=0.8, zorder=3,
 )
 
+# Label each bar end with its value and unit
 # กำกับค่าพร้อมหน่วยที่ปลายแท่ง
 for bar, value in zip(bars, density["ความหนาแน่นประชากร_2566"]):
     ax.text(
@@ -56,12 +63,14 @@ for bar, value in zip(bars, density["ความหนาแน่นประ�
         va="center", ha="left", fontsize=10.5, color="#333333", fontweight="bold",
     )
 
+# Province-wide average line
 # เส้นค่าเฉลี่ยทั้งจังหวัด
 ax.axvline(province_avg, color="#1f77b4", linestyle="--", linewidth=1.4, zorder=2)
 ax.text(province_avg, len(density) - 0.35,
         f"ค่าเฉลี่ยทั้งจังหวัด {province_avg:,.0f}",
         color="#1f77b4", fontsize=9.5, ha="center", va="bottom", fontweight="bold")
 
+# Style the axes
 # แต่งแกน
 ax.set_title("ความหนาแน่นประชากรรายอำเภอ จังหวัดนนทบุรี ปี 2566",
              fontsize=16, fontweight="bold", pad=16, color="#222222")
@@ -74,7 +83,7 @@ for spine in ["top", "right"]:
     ax.spines[spine].set_visible(False)
 ax.tick_params(labelsize=11)
 
-fig.text(0.01, -0.01, "ที่มา: clean_data/clean_population.csv",
+fig.text(0.01, -0.01, "ที่มา: data/clean/clean_population.csv",
          fontsize=8.5, color="gray", ha="left")
 
 plt.tight_layout()

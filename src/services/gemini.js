@@ -31,6 +31,7 @@ async function callGemini(prompt, systemPrompt = 'You are a helpful environmenta
 }
 
 // ------------------ AI Generation Presets ------------------
+// Each preset = modal title + prompt + system prompt for calling Gemini
 // แต่ละ preset = หัวข้อ modal + prompt + system prompt สำหรับเรียก Gemini
 export const AI_PRESETS = {
   muniPolicy: {

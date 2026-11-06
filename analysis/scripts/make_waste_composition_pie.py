@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
-"""องค์ประกอบมูลฝอย (ขยะมูลฝอย) จังหวัดนนทบุรี — แสดงเป็นแผนภูมิวงกลม (Pie chart)
+"""Waste composition, Nonthaburi Province — shown as a Pie chart
+องค์ประกอบมูลฝอย (ขยะมูลฝอย) จังหวัดนนทบุรี — แสดงเป็นแผนภูมิวงกลม (Pie chart)
 
+Uses the "ร้อยละ" (percent) column (average share of each waste component across all local governments)
+Components with a small share (< 2%) are merged into "อื่นๆ" (Other) for readability
 ใช้คอลัมน์ "ร้อยละ" (สัดส่วนเฉลี่ยของแต่ละองค์ประกอบมูลฝอยจากทุก อปท.)
 องค์ประกอบที่มีสัดส่วนน้อย (< 2%) จะถูกรวมเป็น "อื่นๆ" เพื่อให้อ่านง่าย
 """
@@ -10,18 +13,20 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT_DIR = ROOT / "visualization"
+OUT_DIR = ROOT / "figures"
 OUT_DIR.mkdir(exist_ok=True)
 
-SRC = ROOT / "clean_data" / "ประเภทมูลฝอย - ตารางองค์ประกอบมูลฝอย_เลขอังกฤษ.csv"
+SRC = ROOT / "data" / "clean" / "waste_composition.csv"
 df = pd.read_csv(SRC)
 
+# --- Keep only the waste-component rows (drop the summary rows "รวม.." (total) and "ร้อยละ" (percent)) ---
 # --- เลือกเฉพาะแถวที่เป็นองค์ประกอบมูลฝอย (ตัดแถวสรุป "รวม.." และ "ร้อยละ") ---
 comp_col = "องค์ประกอบมูลฝอย"
 mask = ~df[comp_col].str.contains("รวม|ร้อยละ", na=False)
 comp = df.loc[mask, [comp_col, "ร้อยละ"]].dropna().copy()
 comp = comp.sort_values("ร้อยละ", ascending=False).reset_index(drop=True)
 
+# --- Merge small slices (< 2%) into "อื่นๆ" (Other) ---
 # --- รวมชิ้นเล็ก (< 2%) เป็น "อื่นๆ" ---
 THRESHOLD = 2.0
 big = comp[comp["ร้อยละ"] >= THRESHOLD].copy()
@@ -36,6 +41,7 @@ else:
 labels = plot_df[comp_col].tolist()
 sizes = plot_df["ร้อยละ"].tolist()
 
+# --- Styling ---
 # --- หน้าตา ---
 plt.rcParams.update({
     "font.family": "Tahoma",
@@ -44,7 +50,7 @@ plt.rcParams.update({
 })
 
 colors = plt.cm.tab20.colors
-explode = [0.06 if i == 0 else 0.0 for i in range(len(sizes))]  # เน้นชิ้นใหญ่สุด
+explode = [0.06 if i == 0 else 0.0 for i in range(len(sizes))]  # emphasize the largest slice — เน้นชิ้นใหญ่สุด
 
 fig, ax = plt.subplots(figsize=(10, 8))
 fig.patch.set_facecolor("white")
@@ -71,7 +77,7 @@ ax.set_title("องค์ประกอบมูลฝอย (ขยะมู�
 ax.axis("equal")
 
 fig.text(0.01, 0.01,
-         "ที่มา: clean_data/ประเภทมูลฝอย - ตารางองค์ประกอบมูลฝอย_เลขอังกฤษ.csv  "
+         "ที่มา: data/clean/waste_composition.csv  "
          "| ใช้คอลัมน์ 'ร้อยละ' (เฉลี่ยทุก อปท.) | รวมส่วนที่ < 2% เป็น 'อื่นๆ'",
          fontsize=8.5, color="gray", ha="left")
 

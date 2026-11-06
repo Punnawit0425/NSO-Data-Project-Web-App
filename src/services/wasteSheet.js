@@ -1,9 +1,15 @@
 /* ===================================================================
+ *  wasteSheet — auto-connects to Google Sheets through a Publish-to-web link (CSV)
  *  wasteSheet — เชื่อมต่อ Google Sheets อัตโนมัติผ่านลิงก์ Publish-to-web (CSV)
  * ===================================================================
+ *  Real data source: municipal solid waste volume, Nonthaburi Province
+ *  Columns: (index) | year | month | province | district | local gov. | municipal solid waste (tonnes)
  *  แหล่งข้อมูลจริง: ปริมาณขยะมูลฝอยชุมชนจังหวัดนนทบุรี
  *  คอลัมน์: (ลำดับ) | ปี | เดือน | จังหวัด | อำเภอ | อปท. | ขยะมูลฝอยชุมชน(ตัน)
  *
+ *  This link is public (Anyone with the link) and sends the header
+ *  `Access-Control-Allow-Origin: *`, so the browser can fetch it directly
+ *  without an API key, and it works on GitHub Pages
  *  ลิงก์นี้เปิดสาธารณะ (Anyone with the link) และส่ง header
  *  `Access-Control-Allow-Origin: *` จึง fetch ได้ตรงจากเบราว์เซอร์
  *  โดยไม่ต้องใช้ API key และทำงานบน GitHub Pages ได้
@@ -12,16 +18,20 @@
 export const CSV_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vRcxrY5zB49yTU2G4-1wp8qI0a2IH7q0SkvHb7eyZZ66nTiQkX4rjt9wtrFcnjkYIvK_nB9CeWLM0XT/pub?output=csv';
 
+// (Backup) local backup data, used when loading from Google Sheets fails
+// Its columns match the real sheet, so it can be fed straight into toRecords()
+// Vite embeds this file in the bundle as text (?raw), so it works even offline
 // (สำรอง) ข้อมูลแบ็กอัปในเครื่อง ใช้เมื่อโหลดจาก Google Sheets ไม่สำเร็จ
 // คอลัมน์ตรงกับชีตจริง จึงป้อนเข้า toRecords() ได้ทันที
-// วิธีเปิดใช้งาน: ยกเลิกคอมเมนต์บรรทัด import ด้านล่าง + บล็อก fallback ใน loadWasteData()
-// import BACKUP_CSV from '../data2/clean_community.csv?raw';
+// Vite ฝังไฟล์นี้ลงใน bundle เป็นข้อความ (?raw) จึงใช้ได้แม้ออฟไลน์
+import BACKUP_CSV from '../../analysis/data/clean/clean_community.csv?raw';
 
 const THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 const MONTH_INDEX = Object.fromEntries(THAI_MONTHS.map((m, i) => [m, i + 1]));
 
 export { THAI_MONTHS };
 
+// ---- CSV parser that supports quoted fields / commas inside quotes ----
 // ---- CSV parser ที่รองรับ field แบบมี quote / คอมมาในเครื่องหมายคำพูด ----
 function parseCsv(text) {
   const rows = [];
@@ -62,6 +72,7 @@ function parseCsv(text) {
   return rows;
 }
 
+// ---- Convert raw CSV -> records {year, month, district, lao, waste} ----
 // ---- แปลง CSV ดิบ -> ระเบียน {year, month, district, lao, waste} ----
 function toRecords(text) {
   const rows = parseCsv(text).filter((r) => r.some((c) => c.trim() !== ''));
@@ -92,12 +103,13 @@ function toRecords(text) {
   return out;
 }
 
+// ---- Summarize the data into the structure the screens use ----
 // ---- สรุปข้อมูลเป็นโครงสร้างที่หน้าจอใช้ ----
 function aggregate(records) {
   const totalByYear = {};
-  const monthlyByYear = {}; // year -> [12 ตัวเลข]
-  const districtByYear = {}; // year -> { อำเภอ: ตัน }
-  const laoByYear = {}; // year -> Set ของ อปท.
+  const monthlyByYear = {}; // year -> [12 numbers] — year -> [12 ตัวเลข]
+  const districtByYear = {}; // year -> { district: tonnes } — year -> { อำเภอ: ตัน }
+  const laoByYear = {}; // year -> Set of local governments — year -> Set ของ อปท.
 
   for (const rec of records) {
     const y = String(rec.year);
@@ -115,6 +127,7 @@ function aggregate(records) {
 
   const years = Object.keys(totalByYear).map(Number).sort((a, b) => b - a);
 
+  // Districts sorted from largest to smallest per year
   // อำเภอเรียงจากมากไปน้อยต่อปี
   const districtsSortedByYear = {};
   for (const y of Object.keys(districtByYear)) {
@@ -127,7 +140,7 @@ function aggregate(records) {
   for (const y of Object.keys(laoByYear)) laoCountByYear[y] = laoByYear[y].size;
 
   return {
-    years, // [2567, 2566, ...] (พ.ศ.)
+    years, // [2567, 2566, ...] (Buddhist Era) — [2567, 2566, ...] (พ.ศ.)
     totalByYear, // { '2567': 579563.x, ... }
     monthlyByYear, // { '2567': [m1..m12], ... }
     districtsByYear: districtsSortedByYear, // { '2567': [{name,tons}], ... }
@@ -135,6 +148,10 @@ function aggregate(records) {
   };
 }
 
+// ---- Build a continuous (chronological) monthly time series for the forecast feature ----
+//  Concatenate monthlyByYear (year -> [12]) from the oldest year to the newest
+//  then trim the "trailing months with no data yet" (value 0) of the latest year so they don't distort the trend
+//  Returns: { series: number[] (tonnes), startYearBE: number } — fed to WasteReductionSimulator
 // ---- สร้างอนุกรมเวลารายเดือนแบบต่อเนื่อง (chronological) สำหรับฟีเจอร์พยากรณ์ ----
 //  นำ monthlyByYear (ปี -> [12]) มาต่อกันเรียงจากปีเก่าสุดไปใหม่สุด
 //  แล้วตัด "เดือนท้ายที่ยังไม่มีข้อมูล" (ค่า 0) ของปีล่าสุดออก เพื่อไม่ให้บิดเบือนแนวโน้ม
@@ -147,11 +164,13 @@ export function buildMonthlySeries(agg) {
     const months = agg.monthlyByYear[String(y)] || new Array(12).fill(0);
     series.push(...months.map((v) => Math.round(v)));
   }
+  // Trim trailing zeros (future months of the latest year not reported yet)
   // ตัดศูนย์ท้ายชุด (เดือนอนาคตของปีล่าสุดที่ยังไม่มีรายงาน)
   while (series.length && series[series.length - 1] === 0) series.pop();
   return { series, startYearBE: yearsAsc[0] };
 }
 
+// ---- Build the province-level summary for Export CSV (from real data) ----
 // ---- สร้างสรุประดับจังหวัดสำหรับ Export CSV (จากข้อมูลจริง) ----
 export function buildProvinceSummary(agg) {
   const rows = agg.years.map((y) => ({
@@ -167,30 +186,24 @@ export function buildProvinceSummary(agg) {
   return rows;
 }
 
+// ---- Load live data from the Google Sheets link (auto-connect) ----
+//  If the sheet fails to load (network down / sheet unpublished / sheet empty) the local backup data is used instead
+//  The result has a `source` field = 'sheet' | 'backup' so the screen can tell the user where the data came from
 // ---- โหลดข้อมูลสดจากลิงก์ Google Sheets (auto-connect) ----
+//  ถ้าโหลดชีตไม่สำเร็จ (เน็ตล่ม / ชีตถูกปิด / ชีตว่าง) จะใช้ข้อมูลสำรองในเครื่องแทน
+//  ผลลัพธ์มีฟิลด์ `source` = 'sheet' | 'backup' เพื่อให้หน้าจอแจ้งผู้ใช้ได้ว่าใช้ข้อมูลจากไหน
 export async function loadWasteData() {
-  const res = await fetch(CSV_URL);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const text = await res.text();
-  const records = toRecords(text);
-  if (!records.length) throw new Error('ไม่พบข้อมูลในชีต');
-  return aggregate(records);
-
-  /* === (สำรอง) FALLBACK เมื่อ Google Sheets ล่ม — ปัจจุบันปิดไว้ ไม่ทำงาน ===
-   * วิธีเปิดใช้งาน:
-   *   1) ยกเลิกคอมเมนต์บรรทัด `import BACKUP_CSV ...` ที่ส่วนหัวของไฟล์
-   *   2) แทน body ของฟังก์ชันนี้ด้วยรูปแบบ try/catch ด้านล่าง
-   *
-   * try {
-   *   const res = await fetch(CSV_URL);
-   *   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-   *   const text = await res.text();
-   *   const records = toRecords(text);
-   *   if (!records.length) throw new Error('ไม่พบข้อมูลในชีต');
-   *   return aggregate(records);
-   * } catch (err) {
-   *   console.warn('[NonD] โหลดจากชีตไม่สำเร็จ ใช้ข้อมูลสำรองจาก src/data2:', err.message);
-   *   return aggregate(toRecords(BACKUP_CSV));
-   * }
-   */
+  try {
+    const res = await fetch(CSV_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const records = toRecords(text);
+    if (!records.length) throw new Error('ไม่พบข้อมูลในชีต');
+    return { ...aggregate(records), source: 'sheet' };
+  } catch (err) {
+    console.warn('[NonD] โหลดจากชีตไม่สำเร็จ ใช้ข้อมูลสำรองจาก analysis/data/clean:', err.message);
+    const records = toRecords(BACKUP_CSV);
+    if (!records.length) throw err; // backup data is unusable too → let the screen show the error state — ข้อมูลสำรองก็ใช้ไม่ได้ → ให้หน้าจอแสดงสถานะ error
+    return { ...aggregate(records), source: 'backup' };
+  }
 }

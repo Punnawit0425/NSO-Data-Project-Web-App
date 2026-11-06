@@ -14,19 +14,28 @@ import {
 import { Sliders, TrendingDown, Leaf, Info, Factory, Calendar, TreePine } from "lucide-react";
 
 /* ============================================================================
+ *  NonD — Waste Reduction & Carbon Credit Simulator (Scenario Simulator)
  *  NonD — ตัวจำลองการลดขยะ & คาร์บอนเครดิต (Scenario Simulator)
  * ----------------------------------------------------------------------------
  *
+ *  Idea: we forecast a "baseline" from real data, then "assume" a reduction rate
+ *  from using the platform — this value is not learned from data, it is an adjustable
+ *  assumption that should be based on real benchmarks (see the notes at the end of the file)
  *  แนวคิด: เราพยากรณ์ "เส้นฐาน" (baseline) จากข้อมูลจริง แล้ว "สมมติ" อัตราการลด
  *  ที่เกิดจากการใช้แพลตฟอร์ม — ค่านี้ไม่ได้เรียนรู้จากข้อมูล แต่เป็นสมมติฐานที่
  *  ปรับได้และควรอ้างอิงเกณฑ์มาตรฐานจริง (ดูหมายเหตุท้ายไฟล์)
  * ========================================================================== */
 
 /* ----------------------------------------------------------------------------
+ *  1) Historical data (HISTORICAL)
  *  1) ข้อมูลในอดีต (HISTORICAL)
  *  -------------------------------------------------------------------------
+ *  ★ Real data from wasteSheet.js can be used by passing the `historical` + `startYearBE` props
+ *    (see PublicView.jsx, which builds the monthly series with buildMonthlySeries())
+ *  If no props are passed, it falls back to the 36-month sample data below
+ *  (slight upward trend + seasonality) so the component works standalone
  *  ★ ใช้ข้อมูลจริงจาก wasteSheet.js ได้โดยส่งผ่าน prop `historical` + `startYearBE`
- *    (ดู ForecastView.jsx ที่สร้างอนุกรมรายเดือนด้วย buildMonthlySeries())
+ *    (ดู PublicView.jsx ที่สร้างอนุกรมรายเดือนด้วย buildMonthlySeries())
  *  หากไม่ได้ส่ง prop เข้ามา จะ fallback มาใช้ข้อมูลตัวอย่าง 36 เดือนด้านล่างนี้
  *  (มีแนวโน้มเพิ่มเล็กน้อย + ฤดูกาล) เพื่อให้คอมโพเนนต์ทำงานได้แบบสแตนด์อโลน
  * -------------------------------------------------------------------------- */
@@ -36,16 +45,18 @@ const SAMPLE_HISTORICAL = [
   45200, 43800, 49100, 52600, 50400, 47100, 46200, 45600, 44700, 47800, 49700, 54900,
 ];
 
-const SAMPLE_START_YEAR_BE = 2565; // พ.ศ. ของจุดเริ่มข้อมูลตัวอย่าง (มกราคม)
+const SAMPLE_START_YEAR_BE = 2565; // Buddhist Era year where the sample data starts (January) — พ.ศ. ของจุดเริ่มข้อมูลตัวอย่าง (มกราคม)
 const THAI_MONTHS = [
   "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
   "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
 ];
 
 /* ----------------------------------------------------------------------------
+ *  2) Forecasting core (library-agnostic — can be moved out into a util)
  *  2) แกนพยากรณ์ (library-agnostic — ยกออกไปเป็น util ได้)
  * -------------------------------------------------------------------------- */
 
+// Linear trend by least squares
 // แนวโน้มเชิงเส้นด้วยวิธีกำลังสองน้อยที่สุด
 function linearTrend(values) {
   const n = values.length;
@@ -61,6 +72,7 @@ function linearTrend(values) {
   return { slope, intercept: meanY - slope * meanX };
 }
 
+// Multiplicative seasonal indices, period = 12 months, normalized so the mean = 1
 // ดัชนีฤดูกาลแบบคูณ (multiplicative), คาบ = 12 เดือน, ปรับให้ค่าเฉลี่ย = 1
 function seasonalIndices(values, period = 12) {
   const { slope, intercept } = linearTrend(values);
@@ -74,6 +86,7 @@ function seasonalIndices(values, period = 12) {
   return idx.map((v) => (mean ? v / mean : 1));
 }
 
+// Forecast the baseline h months ahead
 // พยากรณ์ baseline h เดือนข้างหน้า
 function forecastBaseline(values, horizon, period = 12) {
   const { slope, intercept } = linearTrend(values);
@@ -87,6 +100,7 @@ function forecastBaseline(values, horizon, period = 12) {
   return out;
 }
 
+// "Effective" reduction rate at month m after adoption — ramps up gradually to full during the adjustment period
 // อัตราการลด "ที่มีผลจริง" ณ เดือน m หลังเริ่มใช้ — ค่อย ๆ เพิ่มจนเต็มในช่วงปรับตัว
 function effectiveReduction(m, fullRate, rampMonths) {
   if (rampMonths <= 0) return fullRate;
@@ -100,6 +114,7 @@ function labelFor(monthIndex, startYearBE) {
 }
 
 /* ----------------------------------------------------------------------------
+ *  3) Benchmarks (examples — should be replaced with citable figures)
  *  3) เกณฑ์มาตรฐาน (ตัวอย่าง — ควรแทนที่ด้วยตัวเลขที่อ้างอิงได้จริง)
  * -------------------------------------------------------------------------- */
 const PRESETS = [
@@ -109,12 +124,13 @@ const PRESETS = [
 ];
 
 export default function WasteReductionSimulator({ historical, startYearBE, usingLiveData = false }) {
-  const [reductionRate, setReductionRate] = useState(0.18); // อัตราการลดเต็มที่
-  const [rampMonths, setRampMonths] = useState(12); // ระยะปรับตัว
-  const [horizon, setHorizon] = useState(36); // ช่วงพยากรณ์ (เดือน)
-  const [emissionFactor, setEmissionFactor] = useState(0.94); // tCO₂e ต่อขยะ 1 ตันที่หลีกเลี่ยง
-  const [granularity, setGranularity] = useState("month"); // ความละเอียดของกราฟ: รายเดือน / รายปี
+  const [reductionRate, setReductionRate] = useState(0.18); // full reduction rate — อัตราการลดเต็มที่
+  const [rampMonths, setRampMonths] = useState(12); // ramp-up period — ระยะปรับตัว
+  const [horizon, setHorizon] = useState(36); // forecast horizon (months) — ช่วงพยากรณ์ (เดือน)
+  const [emissionFactor, setEmissionFactor] = useState(0.94); // tCO₂e per 1 tonne of waste avoided — tCO₂e ต่อขยะ 1 ตันที่หลีกเลี่ยง
+  const [granularity, setGranularity] = useState("month"); // chart granularity: monthly / yearly — ความละเอียดของกราฟ: รายเดือน / รายปี
 
+  // Use the real series from the web if available (must be long enough to capture seasonality), otherwise fall back to sample data
   // ใช้อนุกรมจริงจากเว็บถ้ามี (ต้องยาวพอจับฤดูกาล) ไม่งั้น fallback เป็นข้อมูลตัวอย่าง
   const series = historical && historical.length >= 12 ? historical : SAMPLE_HISTORICAL;
   const startYear = startYearBE || SAMPLE_START_YEAR_BE;
@@ -124,6 +140,7 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
     const baseFc = forecastBaseline(series, horizon);
 
     const rows = [];
+    // Historical part
     // ส่วนอดีต
     series.forEach((v, i) => {
       rows.push({
@@ -136,6 +153,7 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
         avoided: null,
       });
     });
+    // Join point (adoption month): every line starts from the latest real value
     // จุดเชื่อม (เดือนเริ่มใช้): ให้ทุกเส้นออกจากค่าจริงล่าสุด
     const lastHist = series[n - 1];
     rows[n - 1].baseline = lastHist;
@@ -143,6 +161,7 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
     rows[n - 1].withPlatformBase = lastHist;
     rows[n - 1].avoided = 0;
 
+    // Forecast part
     // ส่วนพยากรณ์
     let cumAvoided = 0;
     baseFc.forEach((b, h) => {
@@ -156,8 +175,8 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
         historical: null,
         baseline: Math.round(b),
         withPlatform: Math.round(wp),
-        withPlatformBase: Math.round(wp), // ขอบล่างของแถบที่แรเงา
-        avoided: Math.round(avoided), // ความสูงของแถบ = ขยะที่หลีกเลี่ยงได้
+        withPlatformBase: Math.round(wp), // lower edge of the shaded band — ขอบล่างของแถบที่แรเงา
+        avoided: Math.round(avoided), // band height = avoided waste — ความสูงของแถบ = ขยะที่หลีกเลี่ยงได้
       });
     });
 
@@ -173,15 +192,17 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
 
   const fmt = (x) => Math.round(x).toLocaleString("th-TH");
 
+  // Tree-planting equivalent of the cumulative carbon credits (common reference ~21 kg CO₂ per tree per year)
   // เทียบเท่าการปลูกต้นไม้จากคาร์บอนเครดิตสะสม (อ้างอิงทั่วไป ~21 กก.CO₂ ต่อต้นต่อปี)
   const KG_CO2_PER_TREE = 21;
   const treesEquivalent = (model.cumCredits * 1000) / KG_CO2_PER_TREE;
 
+  // Arrange chart data by the selected granularity (monthly = as is / yearly = summed per year)
   // จัดข้อมูลกราฟตามความละเอียดที่เลือก (รายเดือน = ตามเดิม / รายปี = รวมยอดต่อปี)
   const displayRows = useMemo(() => {
   if (granularity === "month") return model.rows;
 
-  const n = series.length;               // จำนวนเดือนข้อมูลจริง
+  const n = series.length;               // number of months of real data — จำนวนเดือนข้อมูลจริง
   const byYear = new Map();
   const ensure = (year) => {
     if (!byYear.has(year))
@@ -203,6 +224,8 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
       o.hasHist = true;
     }
 
+    // ★ Count only real forecast months (idx >= n) — not the "join month" (n-1)
+    //   so a single month does not distort the yearly total of the boundary year
     // ★ นับเฉพาะเดือนพยากรณ์จริง (idx >= n) — ไม่นับ "เดือนเชื่อม" (n-1)
     //   เพื่อไม่ให้ค่าเดือนเดียวไปทำให้ยอดรวมรายปีของปีรอยต่อแหว่ง
     if (r.idx >= n) {
@@ -214,6 +237,8 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
     }
   });
 
+  // ★ Build a year-level join point: the last year with real data
+  //   so the forecast line starts from "that year's real total" → joins smoothly with the real-data line
   // ★ สร้างจุดเชื่อมระดับปี: ปีสุดท้ายที่มีข้อมูลจริง
   //   ให้เส้นพยากรณ์ออกจาก "ยอดรวมจริงของปีนั้น" → เชื่อมต่อเนียนกับเส้นข้อมูลจริง
   const lastHistYear = startYear + Math.floor((n - 1) / 12);
@@ -245,7 +270,7 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
 
   return (
     <div className="w-full bg-slate-50 p-5 rounded-2xl text-slate-800">
-      {/* หัวข้อ */}
+      {/* Heading — หัวข้อ */}
       <div className="flex items-start gap-3 mb-1">
         <div className="mt-0.5 p-2 rounded-xl bg-emerald-100 text-emerald-700">
           <Factory size={20} />
@@ -269,7 +294,7 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
         </div>
       </div>
 
-      {/* แถบเตือนสมมติฐาน */}
+      {/* Assumption warning banner — แถบเตือนสมมติฐาน */}
       <div className="flex gap-2 items-start text-[13px] bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 my-4">
         <Info size={16} className="mt-0.5 shrink-0" />
         <span>
@@ -279,7 +304,7 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
         </span>
       </div>
 
-      {/* การ์ดสรุป */}
+      {/* Summary cards — การ์ดสรุป */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         <SummaryCard
           icon={<TrendingDown size={18} />}
@@ -308,9 +333,9 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
         />
       </div>
 
-      {/* กราฟ */}
+      {/* Chart — กราฟ */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4 mb-5">
-        {/* แถบเลือกความละเอียดของกราฟ: รายเดือน / รายปี */}
+        {/* Chart granularity selector: monthly / yearly — แถบเลือกความละเอียดของกราฟ: รายเดือน / รายปี */}
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
             <Calendar size={14} className="text-emerald-600" />
@@ -341,7 +366,7 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
         <ResponsiveContainer width="100%" height={340}>
           <ComposedChart data={displayRows} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
-            {/* รายเดือน: แสดงป้ายทุก 6 เดือน (interval=5) / รายปี: แสดงทุกปี (interval=0) */}
+            {/* Monthly: label every 6 months (interval=5) / Yearly: label every year (interval=0) — รายเดือน: แสดงป้ายทุก 6 เดือน (interval=5) / รายปี: แสดงทุกปี (interval=0) */}
             <XAxis
               dataKey="name"
               tick={{ fontSize: 11, fill: "#94a3b8" }}
@@ -359,7 +384,7 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
             />
             <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
 
-            {/* แถบแรเงา = ขยะที่หลีกเลี่ยงได้ (วางบนเส้น withPlatform จนถึง baseline) */}
+            {/* Shaded band = avoided waste (stacked on the withPlatform line up to the baseline) — แถบแรเงา = ขยะที่หลีกเลี่ยงได้ (วางบนเส้น withPlatform จนถึง baseline) */}
             <Area
               dataKey="withPlatformBase"
               stackId="band"
@@ -413,7 +438,7 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
         </ResponsiveContainer>
       </div>
 
-      {/* ตัวควบคุม */}
+      {/* Controls — ตัวควบคุม */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4">
         <div className="flex items-center gap-2 mb-4 text-slate-700">
           <Sliders size={16} />
@@ -504,6 +529,7 @@ export default function WasteReductionSimulator({ historical, startYearBE, using
   );
 }
 
+/* ---------- Small UI pieces ---------- */
 /* ---------- ชิ้นส่วน UI เล็ก ๆ ---------- */
 function SummaryCard({ icon, label, value, tone, sub }) {
   const tones = {
@@ -535,8 +561,15 @@ function Control({ label, value, children }) {
 }
 
 /* ============================================================================
+ *  Notes for future work
  *  หมายเหตุการต่อยอด
  * ----------------------------------------------------------------------------
+ *  • Replace HISTORICAL with the real monthly time series from wasteSheet.js
+ *    (loadWasteData() → build an array of monthly tonnes in time order)
+ *  • reductionRate / emissionFactor should be based on research or real pilot programs
+ *    e.g. source-separation rates in comparable cities
+ *  • Once real "pilot-period data" exists (areas using vs not using the platform)
+ *    the assumption can be replaced by a difference-in-differences evaluation
  *  • แทน HISTORICAL ด้วยอนุกรมเวลารายเดือนจริงจาก wasteSheet.js
  *    (loadWasteData() → สร้าง array ของตันรายเดือน เรียงตามเวลา)
  *  • reductionRate / emissionFactor ควรอ้างอิงงานวิจัยหรือโครงการนำร่องจริง

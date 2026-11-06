@@ -2,10 +2,12 @@ import { useState, useEffect, useMemo } from 'react';
 import Icon from '../Icon.jsx';
 import { useApp } from '../../appContext.js';
 import { THAI_MONTHS, buildMonthlySeries } from '../../services/wasteSheet.js';
-import WasteReductionSimulator from '../../model.jsx';
+import WasteReductionSimulator from '../WasteReductionSimulator.jsx';
 
 const fmt = (n) => Math.round(n).toLocaleString();
 
+// Build a line-chart path from a series of monthly values (12 values), scaled to the domain [min, max]
+// (zoomed in: does not start from 0) and "skip" months with no data yet (value <= 0) instead of drawing them
 // สร้าง path เส้นกราฟจากชุดตัวเลขรายเดือน (12 ค่า) โดยสเกลตาม domain [min, max]
 // (ซูมเข้า: ไม่เริ่มจาก 0) และ "เว้นช่วง" เดือนที่ยังไม่มีข้อมูล (ค่า <= 0) ออกจากเส้น
 function linePath(values, min, max) {
@@ -15,7 +17,7 @@ function linePath(values, min, max) {
   const cmds = [];
   values.forEach((v, i) => {
     if (!(v > 0)) {
-      started = false; // ขาดช่วง: เริ่มลากเส้นใหม่เมื่อเจอข้อมูลอีกครั้ง
+      started = false; // gap: start a new line segment when data appears again — ขาดช่วง: เริ่มลากเส้นใหม่เมื่อเจอข้อมูลอีกครั้ง
       return;
     }
     const x = 3 + (i / 11) * 94;
@@ -33,6 +35,7 @@ export default function PublicView() {
   const [year, setYear] = useState('');
   const [month, setMonth] = useState('all');
 
+  // Real monthly series (continuous across years) fed to the forecast simulator moved from section 6
   // อนุกรมรายเดือนจริง (ต่อเนื่องทุกปี) สำหรับป้อนตัวจำลองพยากรณ์ที่ย้ายมาจากเซกชัน 6
   const { series: monthlySeries, startYearBE } = useMemo(
     () => (ready ? buildMonthlySeries(waste) : { series: [], startYearBE: null }),
@@ -40,11 +43,13 @@ export default function PublicView() {
   );
   const usingLiveData = ready && monthlySeries.length >= 12;
 
+  // Set the default year to the latest year once the data is ready
   // ตั้งค่าปีเริ่มต้นเป็นปีล่าสุดเมื่อข้อมูลพร้อม
   useEffect(() => {
     if (ready && !year) setYear(String(waste.years[0]));
   }, [ready, waste, year]);
 
+  // ---- Compute values from the real data ----
   // ---- คำนวณค่าจากข้อมูลจริง ----
   let view = null;
   if (ready && year) {
@@ -55,6 +60,7 @@ export default function PublicView() {
     const prevTotal = waste.totalByYear[prevKey];
     const monthsWithData = monthly.filter((v) => v > 0).length || 12;
 
+    // The first card depends on the month filter
     // การ์ดใบแรกขึ้นกับตัวกรองเดือน
     const selectedValue = month === 'all' ? yearTotal : monthly[Number(month) - 1] || 0;
     const prevValue = month === 'all' ? prevTotal : prevMonthly ? prevMonthly[Number(month) - 1] : undefined;
@@ -64,12 +70,14 @@ export default function PublicView() {
     const districts = waste.districtsByYear[year] || [];
     const maxDistrict = districts.length ? districts[0].tons : 0;
 
+    // "Zoomed-in" Y-axis domain: computed only from months with real data (>0) in this year and last year
+    // so monthly fluctuations are clearly visible (not squeezed by starting from 0)
     // โดเมนแกน Y แบบ "ซูมเข้า": คิดจากเฉพาะเดือนที่มีข้อมูลจริง (>0) ของปีนี้และปีก่อน
     // เพื่อให้เห็นความผันผวนรายเดือนชัดเจน (ไม่บีบให้เริ่มจาก 0)
     const domainValues = [...monthly, ...(prevMonthly || [])].filter((v) => v > 0);
     const rawMin = domainValues.length ? Math.min(...domainValues) : 0;
     const rawMax = domainValues.length ? Math.max(...domainValues) : 0;
-    const pad = (rawMax - rawMin) * 0.08 || rawMax * 0.05; // เผื่อขอบบน/ล่าง และกันกรณี min==max
+    const pad = (rawMax - rawMin) * 0.08 || rawMax * 0.05; // pad the top/bottom and guard against min==max — เผื่อขอบบน/ล่าง และกันกรณี min==max
     const chartMin = Math.max(0, Math.floor(rawMin - pad));
     const chartMax = Math.ceil(rawMax + pad) || 1;
 
@@ -130,7 +138,7 @@ export default function PublicView() {
             >
               ดูข้อมูลภาพรวม
             </a>
-            {/* ลิงก์ไปหน้าจำลอง LINE OA (public/line-oa-ui — อิง base URL ของ Vite) */}
+            {/* Link to the LINE OA mock page (public/line-oa-ui — based on Vite's base URL) — ลิงก์ไปหน้าจำลอง LINE OA (public/line-oa-ui — อิง base URL ของ Vite) */}
             <a
               href={`${import.meta.env.BASE_URL}line-oa-ui/index.html`}
               className="text-white font-semibold px-5 py-2.5 rounded-xl transition-all text-sm flex items-center gap-2 shadow-sm hover:opacity-90"
@@ -177,7 +185,7 @@ export default function PublicView() {
         </div>
       </div>
 
-      {/* Interactive Public Dashboard — ขับเคลื่อนด้วยข้อมูลจริงจาก Google Sheets */}
+      {/* Interactive Public Dashboard — powered by real data from Google Sheets — Interactive Public Dashboard — ขับเคลื่อนด้วยข้อมูลจริงจาก Google Sheets */}
       <div id="demo-dashboard" className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
         <div className="p-6 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -188,7 +196,10 @@ export default function PublicView() {
             <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
               ข้อมูลจริงเชื่อมตรงจาก Google Sheets
               {wasteStatus === 'loading' && <span className="text-amber-600 font-medium">· กำลังเชื่อมต่อ...</span>}
-              {wasteStatus === 'ready' && <span className="text-emerald-600 font-medium">· เชื่อมต่อแล้ว</span>}
+              {wasteStatus === 'ready' && waste?.source !== 'backup' && <span className="text-emerald-600 font-medium">· เชื่อมต่อแล้ว</span>}
+              {wasteStatus === 'ready' && waste?.source === 'backup' && (
+                <span className="text-amber-600 font-medium">· เชื่อมต่อไม่สำเร็จ — แสดงข้อมูลสำรองในเครื่อง</span>
+              )}
               {wasteStatus === 'error' && <span className="text-rose-600 font-medium">· เชื่อมต่อไม่สำเร็จ</span>}
             </p>
           </div>
@@ -377,9 +388,14 @@ export default function PublicView() {
               </div>
             </div>
 
-            {/* ===== ตัวจำลองพยากรณ์การลดขยะ & คาร์บอนเครดิต (ย้ายมาจากเซกชัน 6 เดิม) =====
+            {/* ===== Waste reduction & carbon credit forecast simulator (moved from the old section 6) =====
+             *  Placed right after the "monthly municipal solid waste trend" chart
+             *  Feeds the real monthly series from Google Sheets to the simulator (src/components/WasteReductionSimulator.jsx)
+             *  If there is not enough real data, the simulator falls back to its own sample data
+             *
+             *  ===== ตัวจำลองพยากรณ์การลดขยะ & คาร์บอนเครดิต (ย้ายมาจากเซกชัน 6 เดิม) =====
              *  วางต่อจากกราฟ "แนวโน้มปริมาณขยะมูลฝอยชุมชนรายเดือน" ทันที
-             *  ป้อนอนุกรมรายเดือนจริงจาก Google Sheets ให้ตัวจำลอง (src/model.jsx)
+             *  ป้อนอนุกรมรายเดือนจริงจาก Google Sheets ให้ตัวจำลอง (src/components/WasteReductionSimulator.jsx)
              *  หากข้อมูลจริงไม่พอ ตัวจำลองจะ fallback ไปใช้ข้อมูลตัวอย่างเอง */}
             <WasteReductionSimulator
               historical={usingLiveData ? monthlySeries : undefined}
@@ -445,7 +461,7 @@ export default function PublicView() {
             </button>
           </div>
         </div>
-        {/* ช่องทางติดต่อทาง LINE Official (ข้อมูลสมมุติเพื่อการสาธิต) */}
+        {/* LINE Official contact channel (mock data for the demo) — ช่องทางติดต่อทาง LINE Official (ข้อมูลสมมุติเพื่อการสาธิต) */}
         <div className="p-8 flex flex-col justify-between border-l border-emerald-200 relative overflow-hidden text-white" style={{ backgroundColor: '#06C755' }}>
           <div className="absolute inset-0 opacity-10 pointer-events-none">
             <div className="w-full h-full bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]"></div>

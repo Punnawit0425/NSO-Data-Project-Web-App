@@ -3,17 +3,20 @@ import Icon from '../Icon.jsx';
 import { useApp } from '../../appContext.js';
 import { PENALTY_RATE_PER_KG } from '../../data/nondData.js';
 
+// Villages managed by this juristic office (matches the header "แสนสุขนนท์ A")
 // หมู่บ้านที่นิติบุคคลนี้ดูแล (สอดคล้องกับ header "แสนสุขนนท์ A")
 const MANAGED_VILLAGE = 'a';
 
 export default function VillageView() {
   const { exportData, runAI, showToast, collections } = useApp();
 
+  // New feature: per-household waste records "synced" from the waste collector (this village only)
   // ฟีเจอร์ใหม่: บันทึกขยะรายบ้านที่ "ซิงค์" มาจากพนักงานเก็บขยะ (เฉพาะหมู่บ้านนี้)
   const houseRecords = useMemo(
     () => collections.filter((r) => r.village === MANAGED_VILLAGE),
     [collections],
   );
+  // Track households that have already been issued a fine invoice (within the session)
   // ติดตามบ้านที่ออกใบแจ้งหนี้ค่าปรับแล้ว (ภายในเซสชัน)
   const [issued, setIssued] = useState(() => new Set());
 
@@ -22,6 +25,7 @@ export default function VillageView() {
     showToast(`ส่งใบแจ้งหนี้ค่าปรับขยะเสีย ${amount.toFixed(2)} บาท ไปยังบ้านเลขที่ ${houseId} เรียบร้อยแล้ว`);
   };
 
+  // ----- Item 4: monthly cooperation-rate trend (line chart) -----
   // ----- ข้อ 4: แนวโน้มอัตราความร่วมมือรายเดือน (กราฟเส้น) -----
   const coopTrend = [
     { m: 'ม.ค.', v: 62 },
@@ -36,6 +40,7 @@ export default function VillageView() {
   const coopLine = coopTrend.map((p, i) => `${i ? 'L' : 'M'}${coopX(i).toFixed(1)} ${coopY(p.v).toFixed(1)}`).join(' ');
   const coopArea = `${coopLine} L${coopX(coopTrend.length - 1).toFixed(1)} 40 L${coopX(0).toFixed(1)} 40 Z`;
 
+  // ----- Item 5: compare cumulative monthly dividends, actual vs target (bar chart) -----
   // ----- ข้อ 5: เปรียบเทียบเงินปันผลสะสมรายเดือน จริง vs เป้าหมาย (กราฟแท่ง) -----
   const dividendMonthly = [
     { m: 'มกราคม', actual: 8000, proj: 9000 },
@@ -277,6 +282,9 @@ export default function VillageView() {
       </div>
 
       {/* ============================================================
+       *  New feature: per-household waste checks + "spoiled waste" fine management
+       *  Data synced directly from the waste collector page (Collector Terminal)
+       *
        *  ฟีเจอร์ใหม่: ตรวจสอบขยะรายบ้าน + จัดการค่าปรับ "ขยะเสีย"
        *  ข้อมูลซิงค์ตรงจากหน้าพนักงานเก็บขยะ (Collector Terminal)
        * ============================================================ */}

@@ -1,6 +1,7 @@
 """
 waste_reduction_impact.py
 =========================
+Estimates the impact of waste-reduction programs in Nonthaburi
 คำนวณผลกระทบจากโครงการลดขยะในนนทบุรี
 """
 
@@ -10,12 +11,20 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import matplotlib.font_manager as fm
 import warnings
+from pathlib import Path
 
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 warnings.filterwarnings('ignore')
 
+# File paths relative to this script, so it runs from any folder
+# ที่อยู่ไฟล์อ้างอิงจากตำแหน่งสคริปต์ จึงรันจากโฟลเดอร์ใดก็ได้
+ROOT = Path(__file__).resolve().parent.parent      # analysis/
+CLEAN = ROOT / "data" / "clean"
+FIGURES = ROOT / "figures"
+
 # ─────────────────────────────────────────────────────────────
+# Thai font setup
 # ตั้งค่าฟอนต์ภาษาไทย
 # ─────────────────────────────────────────────────────────────
 
@@ -45,6 +54,7 @@ else:
 plt.rcParams['axes.unicode_minus'] = False
 
 # ─────────────────────────────────────────────────────────────
+# Settings
 # ตั้งค่า
 # ─────────────────────────────────────────────────────────────
 
@@ -72,7 +82,8 @@ MONTH_MAP = {
 # ─────────────────────────────────────────────────────────────
 
 def load_ts(csv, value_col):
-    """โหลด CSV แล้วคืนค่าเป็น Time Series"""
+    """Load the CSV and return it as a time series
+    โหลด CSV แล้วคืนค่าเป็น Time Series"""
 
     df = pd.read_csv(csv)
     df.columns = [c.strip() for c in df.columns]
@@ -131,25 +142,26 @@ def backtest_mape(ts, holdout=12):
 
 def main():
 
+    # Load data
     # โหลดข้อมูล
 
     ts_community = load_ts(
-        "clean_data/clean_community.csv",
+        CLEAN / "clean_community.csv",
         "ขยะมูลฝอยชุมชน(ตัน)"
     )
 
     ts_recycle = load_ts(
-        "clean_data/clean_recycle.csv",
+        CLEAN / "clean_recycle.csv",
         "ขยะรีไซเคิลลงถัง(ตัน)"
     )
 
     ts_benefit = load_ts(
-        "clean_data/clean_benefit.csv",
+        CLEAN / "clean_benefit.csv",
         "ขยะนำไปใช้ประโยชน์"
     )
 
     ts_wet = load_ts(
-        "clean_data/clean_wet.csv",
+        CLEAN / "clean_wet.csv",
         "ขยะอินทรีย์ลงถัง(ตัน)"
     )
 
@@ -170,6 +182,7 @@ def main():
             f"{ts.index.max():%Y-%m}"
         )
 
+    # Evaluate the model
     # ประเมินโมเดล
 
     mape = backtest_mape(ts_community)
@@ -244,6 +257,7 @@ def main():
         )
 
     # ───────────────────────────────
+    # Build the chart
     # สร้างกราฟ
     # ───────────────────────────────
 
@@ -335,7 +349,7 @@ def main():
     plt.tight_layout()
 
     plt.savefig(
-        "waste_reduction_impact.png",
+        FIGURES / "waste_reduction_impact.png",
         dpi=300,
         bbox_inches="tight"
     )

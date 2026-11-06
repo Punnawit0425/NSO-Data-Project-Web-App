@@ -18,9 +18,10 @@ const VIEWS = {
   municipality: MunicipalityView,
   village: VillageView,
   factory: FactoryView,
-  collector: CollectorView, // ฟีเจอร์ใหม่: หน้าพนักงานเก็บขยะ
+  collector: CollectorView, // New feature: waste collector page — ฟีเจอร์ใหม่: หน้าพนักงานเก็บขยะ
 };
 
+// Counter for generating ids of new collection records (does not clash with seed-*)
 // ตัวนับสำหรับสร้าง id ของบันทึกการจัดเก็บใหม่ (ไม่ชนกับ seed-*)
 let collectionSeq = 0;
 
@@ -30,6 +31,7 @@ export default function App() {
   const [waste, setWaste] = useState(null);
   const [wasteStatus, setWasteStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
   const [factoryApproved, setFactoryApproved] = useState(false);
+  // New feature: store of per-household waste collection records (shared by the Collector and Village pages)
   // ฟีเจอร์ใหม่: คลังบันทึกการจัดเก็บขยะรายบ้าน (ใช้ร่วมกันระหว่างหน้า Collector และ Village)
   const [collections, setCollections] = useState(INITIAL_COLLECTIONS);
   const [toast, setToast] = useState({ text: '', isWarning: false, visible: false });
@@ -68,6 +70,8 @@ export default function App() {
   );
 
   // ------------------ Collector action: add a per-house collection record ------------------
+  // Add a new collection record to the central store (synced=false first, then "sync")
+  // This data appears immediately on both the collector page and the village juristic office's fine table
   // เพิ่มบันทึกการจัดเก็บใหม่ลงในคลังกลาง (สถานะ synced=false ก่อน แล้วค่อย "ซิงค์")
   // ข้อมูลนี้จะปรากฏทั้งในหน้าพนักงานเก็บขยะและตารางค่าปรับของนิติบุคคลหมู่บ้านทันที
   const addCollection = useCallback((rec) => {
@@ -75,9 +79,10 @@ export default function App() {
     const now = new Date();
     const time = now.toLocaleTimeString('th-TH', { hour12: false });
     const pad = (x) => String(x).padStart(2, '0');
-    const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`; // ISO ตามเวลาท้องถิ่น
+    const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`; // ISO date in local time — ISO ตามเวลาท้องถิ่น
     const entry = { id, time, date, synced: false, ...rec };
     setCollections((prev) => [entry, ...prev]);
+    // Simulate a successful sync to the central system after 1 second (same as the reference file)
     // จำลองการซิงค์ขึ้นส่วนกลางสำเร็จหลัง 1 วินาที (เหมือนไฟล์อ้างอิง)
     setTimeout(() => {
       setCollections((prev) => prev.map((r) => (r.id === id ? { ...r, synced: true } : r)));
@@ -132,6 +137,7 @@ export default function App() {
         if (!active) return;
         setWaste(agg);
         setWasteStatus('ready');
+        // Make Export CSV reflect the real data from the sheet
         // ให้ Export CSV สะท้อนข้อมูลจริงจากชีต
         setData((prev) => ({ ...prev, provinceSummary: buildProvinceSummary(agg) }));
       })

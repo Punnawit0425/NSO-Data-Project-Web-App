@@ -1,4 +1,144 @@
+<a id="english"></a>
+
+# Explanation — Charts and Numbers in the NonD Web App
+
+**English** · [ภาษาไทย](#thai)
+
+This document explains the charts shown in the NonD web app (the waste management and
+carbon credit platform for Nonthaburi Province): what each chart is, how it is built, where
+its data comes from, and what each number on screen means.
+
+> This document does not change any app code; it is an explanation only.
+
+---
+
+## 1. The app has 2 kinds of charts
+
+### A. Small monthly trend charts (hand-drawn SVG)
+- **Where:** `src/components/views/PublicView.jsx`
+- **What it is:** a small line chart of monthly municipal solid waste (tonnes) for the selected year
+- **How it is built:** it does **not** use a chart library. The function `linePath(values, min, max)`
+  turns the 12 monthly values into an SVG `<path>` string by hand
+  - x position: `3 + (i / 11) * 94` → spreads the 12 months across the width
+  - y position: `38 - ((v - min) / range) * 34` → scales each value to fit the box height
+  - The scale is "zoomed in" (starts at `min`, **not** 0) so small changes are easy to see
+  - Months with no data (value ≤ 0) break the line into segments instead of dropping it to zero
+
+### B. Forecast / Scenario Simulator (the main chart)
+- **Where:** `src/components/WasteReductionSimulator.jsx` (the `WasteReductionSimulator` component), rendered inside
+  `PublicView.jsx`
+- **Library:** **Recharts** (`recharts` version 3, see `package.json`), using a `ComposedChart`
+  that combines **lines** with a **shaded area band**
+- This is the main, interactive chart that most people mean when they say "the chart".
+  The rest of this document focuses on it
+
+---
+
+## 2. What the main chart shows
+
+The chart compares **waste without the platform** against **waste with the platform**
+and forecasts forward. It contains these series:
+
+| Series (label in the chart) | Color / line style | Meaning |
+|---|---|---|
+| **ข้อมูลจริง** (Actual) | Solid dark line | Measured monthly waste (tonnes) |
+| **เส้นฐาน (ไม่ใช้แพลตฟอร์ม)** (Baseline, no platform) | Dashed gray line | Forecast assuming nothing changes |
+| **เมื่อใช้แพลตฟอร์ม** (With platform) | Solid green line | Forecast assuming the platform reduces waste |
+| **ขยะที่หลีกเลี่ยงได้** (Avoided waste) | Light green shaded band | Gap between the baseline and "with platform" = waste avoided |
+| **เริ่มใช้** (Adoption) | Dashed blue vertical line | The month the platform is assumed to start |
+
+The x-axis is time (monthly or yearly); the y-axis is waste in tonnes (shown with `k`, e.g.
+`45k` = 45,000 tonnes). A toggle switches between **Monthly** and **Yearly** views.
+
+---
+
+## 3. Where the data comes from
+
+### Real data source
+- A **Google Sheet published as CSV** (`CSV_URL` in `src/services/wasteSheet.js`). It is the
+  official dataset of **municipal solid waste in Nonthaburi Province** (columns: year, month,
+  district, local government, municipal solid waste in tonnes)
+- `loadWasteData()` fetches the CSV → `toRecords()` parses it → `aggregate()` summarizes it into
+  yearly totals, monthly arrays per year, totals per district, and the number of local governments
+- `buildMonthlySeries()` joins each year's monthly data into one continuous time series in
+  chronological order (and trims trailing months of the latest year that have no data yet).
+  This array is passed to the simulator through the `historical` prop, together with
+  `startYearBE` (the starting year in the Buddhist Era)
+
+### Backup / demo data
+- If there is no real data (fewer than 12 months loaded), the simulator uses `SAMPLE_HISTORICAL`
+  in `src/components/WasteReductionSimulator.jsx` instead — 36 months of made-up sample data — so the component can run
+  standalone
+- The label above the chart says which source is in use:
+  - **"Google Sheets (ข้อมูลจริง N เดือน)"** = real data, N months
+  - **"ตัวอย่างสาธิต..."** = demo/sample data
+
+### How the forecast is calculated (`src/components/WasteReductionSimulator.jsx`)
+1. `linearTrend()` — fits a linear trend to the historical data by least squares
+2. `seasonalIndices()` — multiplicative seasonal indices (period = 12 months, normalized to mean 1)
+3. `forecastBaseline()` — forecasts the **baseline** forward = trend × seasonal index
+4. `effectiveReduction(m, fullRate, rampMonths)` — the assumed reduction rate ramps up from 0
+   to the full rate over `rampMonths`
+5. **With platform** = baseline × (1 − effective reduction rate)
+6. **Avoided waste** = baseline − with platform (the shaded band)
+
+> ⚠️ Important: the **baseline** is computed from real historical data, but the **reduction rate**
+> is **an assumption you set with the slider** — it is *not* learned from data (the app shows a
+> yellow warning saying so), because there is no data yet from a period when the platform was
+> actually in use.
+
+---
+
+## 4. What each number on screen means
+
+### Summary cards (above the simulator)
+| Card | Number | Meaning |
+|---|---|---|
+| ขยะที่หลีกเลี่ยงได้สะสม (Cumulative avoided waste) | `… ตัน` | **Cumulative avoided waste** over the forecast period (sum of the green band), in tonnes |
+| คาร์บอนเครดิตสะสม (ประเมิน) (Estimated cumulative carbon credits) | `… tCO₂e` | Cumulative avoided waste × emission factor = estimated **carbon credits** (tonnes of CO₂ equivalent) |
+| เทียบเท่าการปลูกต้นไม้ 🌳 (Tree-planting equivalent) | `… ต้น` | Carbon credits converted to an **equivalent number of trees** (`credits × 1000 kg ÷ 21 kg CO₂ per tree per year`) |
+| อัตราการลด ณ สิ้นช่วง (Reduction rate at end of period) | `… %` | The **effective reduction rate at the end of the forecast** (after fully ramping up) |
+
+### Control sliders (adjustable assumptions)
+| Control | Range | Meaning |
+|---|---|---|
+| อัตราการลดขยะที่คาดหวัง (เต็มที่) (Expected full reduction rate) | 0–40% | The full reduction rate the platform is assumed to eventually reach |
+| ระยะเวลาปรับตัวจนเต็มที่ (Ramp-up period) | 0–36 months | How long the gradual ramp-up takes before reaching the full rate |
+| ช่วงเวลาพยากรณ์ (Forecast horizon) | 12–60 months | How far ahead to forecast |
+| ตัวคูณคาร์บอน (Emission Factor) | 0.20–1.60 | tCO₂e avoided per 1 tonne of waste reduced/recycled |
+
+There are also 3 **preset buttons**: ระมัดระวัง / Conservative (10%), ปานกลาง / Moderate (18%),
+เชิงรุก / Aggressive (28%).
+
+### Axis numbers / tooltip
+- **Y-axis** values are divided by 1000 and suffixed with `k` (e.g. `50k` = 50,000 tonnes)
+- The **tooltip** (on hover) shows the exact value of each series for that month/year, in Thai
+  number format with tonnes (`… ตัน`), or `—` when a series has no value at that point
+
+### Other numbers on the public page
+- The yearly total / monthly value cards and the comparison with the previous year come from
+  `aggregate()` (totals per year and per month)
+- "อำเภอที่มีปริมาณขยะสูงสุด" (districts with the most waste) shows each district's waste in tonnes,
+  with a bar whose width is relative to the largest district that year
+
+---
+
+## 5. One-line summary
+The main chart is a **Recharts ComposedChart** that takes **Nonthaburi's real monthly waste data
+from a published Google Sheet**, forecasts a **baseline** (trend + seasonality), and overlays an
+**assumption-based "with platform" line** and a **shaded "avoided waste" band**. The numbers around
+it are cumulative avoided waste (tonnes), estimated carbon credits (tCO₂e), the tree-planting
+equivalent, and the reduction rate at the end of the period — all recalculated in real time as
+you move the sliders.
+
+---
+---
+
+<a id="thai"></a>
+
 # คำอธิบาย — กราฟและตัวเลขในเว็บแอป NonD
+
+[English](#english) · **ภาษาไทย**
 
 เอกสารนี้อธิบายกราฟต่าง ๆ ที่แสดงในเว็บแอป NonD (แพลตฟอร์มระบบจัดการขยะและ
 คาร์บอนเครดิตของจังหวัดนนทบุรี) ว่ากราฟคืออะไร สร้างขึ้นมาอย่างไร ใช้ข้อมูลจากไหน
@@ -21,7 +161,7 @@
   - เดือนที่ไม่มีข้อมูล (ค่า ≤ 0) จะตัดเส้นออกเป็นช่วง ๆ แทนที่จะลากดิ่งลงไปที่ศูนย์
 
 ### B. ตัวจำลองพยากรณ์ / Scenario Simulator (กราฟหลัก)
-- **อยู่ที่:** `src/model.jsx` (คอมโพเนนต์ `WasteReductionSimulator`) แสดงผลภายใน
+- **อยู่ที่:** `src/components/WasteReductionSimulator.jsx` (คอมโพเนนต์ `WasteReductionSimulator`) แสดงผลภายใน
   `PublicView.jsx`
 - **ไลบรารี:** **Recharts** (`recharts` เวอร์ชัน 3 ดูใน `package.json`) ใช้ `ComposedChart`
   ที่ผสม **เส้น (lines)** เข้ากับ **แถบพื้นที่แรเงา (area band)**
@@ -62,13 +202,13 @@
 
 ### ข้อมูลสำรอง / ข้อมูลสาธิต
 - ถ้าไม่มีข้อมูลจริง (โหลดได้น้อยกว่า 12 เดือน) ตัวจำลองจะใช้ `SAMPLE_HISTORICAL`
-  ใน `src/model.jsx` แทน — เป็นข้อมูลตัวอย่าง 36 เดือนที่สมมติขึ้น — เพื่อให้คอมโพเนนต์
+  ใน `src/components/WasteReductionSimulator.jsx` แทน — เป็นข้อมูลตัวอย่าง 36 เดือนที่สมมติขึ้น — เพื่อให้คอมโพเนนต์
   ทำงานได้แบบสแตนด์อโลน
 - ป้ายกำกับเหนือกราฟจะบอกว่ากำลังใช้แหล่งข้อมูลใด:
   - **"Google Sheets (ข้อมูลจริง N เดือน)"** = ข้อมูลจริง จำนวน N เดือน
   - **"ตัวอย่างสาธิต..."** = ข้อมูลสาธิต/ตัวอย่าง
 
-### วิธีคำนวณการพยากรณ์ (`src/model.jsx`)
+### วิธีคำนวณการพยากรณ์ (`src/components/WasteReductionSimulator.jsx`)
 1. `linearTrend()` — หาเส้นแนวโน้มเชิงเส้นด้วยวิธีกำลังสองน้อยที่สุดจากข้อมูลในอดีต
 2. `seasonalIndices()` — ดัชนีฤดูกาลแบบคูณ (คาบ = 12 เดือน ปรับค่าเฉลี่ยให้เท่ากับ 1)
 3. `forecastBaseline()` — พยากรณ์ **เส้นฐาน** ไปข้างหน้า = แนวโน้ม × ดัชนีฤดูกาล

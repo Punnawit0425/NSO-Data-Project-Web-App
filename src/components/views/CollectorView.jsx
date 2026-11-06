@@ -4,20 +4,29 @@ import { useApp } from '../../appContext.js';
 import { VILLAGE_OPTIONS, VILLAGE_NAMES, SIMULATED_SCALE_WEIGHTS } from '../../data/nondData.js';
 
 /* ===================================================================
+ *  CollectorView — role 5 "waste collector" (Collector Terminal)
  *  CollectorView — บทบาทที่ 5 "พนักงานเก็บขยะ" (Collector Terminal)
  * ===================================================================
+ *  New features (inspired by nond_charge-keeper.html):
+ *  - Filter the work area by village
+ *  - Simulate a digital scale connection (Bluetooth) to "read the weight"
+ *  - Record sorted waste per household: wet / dry / hazardous / spoiled
+ *  - Save to the central store (App state), then "sync" so the village juristic office can calculate fines
  *  ฟีเจอร์ใหม่ (แรงบันดาลใจจาก nond_charge-keeper.html):
  *  - กรองพื้นที่ปฏิบัติงานตามหมู่บ้าน
  *  - จำลองการเชื่อมต่อตาชั่งดิจิทัล (Bluetooth) เพื่อ "ดึงค่าน้ำหนัก"
  *  - บันทึกขยะแยกประเภทรายบ้าน: เปียก / แห้ง / อันตราย / ขยะเสีย
  *  - บันทึกเข้าคลังกลาง (App state) แล้ว "ซิงค์" ให้นิติบุคคลหมู่บ้านนำไปคิดค่าปรับ
  *
+ *  Shares central state (collections) through useApp() — data recorded here
+ *  appears immediately in the fine table on the village juristic office page
  *  ใช้ state กลางร่วมกัน (collections) ผ่าน useApp() — ข้อมูลที่บันทึกที่นี่
  *  จะปรากฏในตารางค่าปรับของหน้านิติบุคคลหมู่บ้านทันที
  * =================================================================== */
 
 const EMPTY_FORM = { houseId: '', wet: '', dry: '', hazard: '', spoiled: '' };
 const fmt = (n) => Number(n || 0).toFixed(2);
+// Show an ISO date (YYYY-MM-DD) in Thai format, e.g. 25 มิ.ย. 2569
 // แสดงวันที่ ISO (YYYY-MM-DD) เป็นรูปแบบไทย เช่น 25 มิ.ย. 2569
 const fmtDate = (iso) =>
   iso ? new Date(iso).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
@@ -25,24 +34,28 @@ const fmtDate = (iso) =>
 export default function CollectorView() {
   const { collections, addCollection, showToast } = useApp();
 
-  const [village, setVillage] = useState('a'); // พื้นที่ปฏิบัติงานที่เลือก
-  const [dateFilter, setDateFilter] = useState('all'); // ตัวกรองวันที่ ('all' = ทุกวันที่)
+  const [village, setVillage] = useState('a'); // selected work area — พื้นที่ปฏิบัติงานที่เลือก
+  const [dateFilter, setDateFilter] = useState('all'); // date filter ('all' = every date) — ตัวกรองวันที่ ('all' = ทุกวันที่)
   const [form, setForm] = useState(EMPTY_FORM);
-  const scaleCounter = useRef(0); // วนค่าน้ำหนักจำลองจากตาชั่ง
+  const scaleCounter = useRef(0); // cycles through simulated scale weights — วนค่าน้ำหนักจำลองจากตาชั่ง
 
+  // All records of the village currently being worked (before the date filter)
   // บันทึกทั้งหมดของหมู่บ้านที่กำลังปฏิบัติงาน (ก่อนกรองวันที่)
   const villageRows = useMemo(() => collections.filter((r) => r.village === village), [collections, village]);
+  // Dates that have data (used to build the filter options), newest first
   // รายการวันที่ที่มีข้อมูล (ใช้สร้างตัวเลือกในตัวกรอง) เรียงล่าสุดก่อน
   const dateOptions = useMemo(() => {
     const set = new Set(villageRows.map((r) => r.date).filter(Boolean));
     return Array.from(set).sort().reverse();
   }, [villageRows]);
+  // Only records that pass the date filter (newest on top)
   // เฉพาะบันทึกที่ผ่านตัวกรองวันที่ (ใหม่อยู่บนสุด)
   const rows = useMemo(
     () => villageRows.filter((r) => dateFilter === 'all' || r.date === dateFilter),
     [villageRows, dateFilter],
   );
 
+  // Totals for this collection round (as in the reference file's footer)
   // ยอดรวมของรอบการเก็บนี้ (ตาม footer ในไฟล์อ้างอิง)
   const totals = useMemo(
     () =>
@@ -60,6 +73,7 @@ export default function CollectorView() {
 
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
+  // Simulate reading the weight from a Bluetooth scale (cycles through values from the data layer)
   // จำลองดึงค่าน้ำหนักจากตาชั่ง Bluetooth (วนชุดค่าจาก data layer)
   const pullBluetoothWeight = () => {
     const w = SIMULATED_SCALE_WEIGHTS[scaleCounter.current % SIMULATED_SCALE_WEIGHTS.length];
@@ -74,6 +88,7 @@ export default function CollectorView() {
     showToast('ดึงค่าน้ำหนักจากตาชั่ง Bluetooth สำเร็จ');
   };
 
+  // Save the record → send it to the central store through addCollection()
   // บันทึกรายการ → ส่งเข้าคลังกลางผ่าน addCollection()
   const saveRecord = () => {
     const houseId = form.houseId.trim();
@@ -124,7 +139,7 @@ export default function CollectorView() {
                 value={village}
                 onChange={(e) => {
                   setVillage(e.target.value);
-                  setDateFilter('all'); // รีเซ็ตตัวกรองวันที่เมื่อเปลี่ยนหมู่บ้าน
+                  setDateFilter('all'); // reset the date filter when the village changes — รีเซ็ตตัวกรองวันที่เมื่อเปลี่ยนหมู่บ้าน
                 }}
                 className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition-all"
               >

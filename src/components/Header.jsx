@@ -6,12 +6,14 @@ const ROLE_TABS = [
   { id: 'municipality', label: '2. เทศบาล' },
   { id: 'village', label: '3. นิติหมู่บ้าน' },
   { id: 'factory', label: '4. โรงงานอุตสาหกรรม' },
+  // New feature — role 5: waste collector (Collector Terminal)
   // ฟีเจอร์ใหม่ — บทบาทที่ 5 พนักงานเก็บขยะ (Collector Terminal)
   { id: 'collector', label: '5. เจ้าหน้าที่ขนขยะมูลฝอย'},
 ];
 
 const ACTIVE_BTN = 'role-btn px-3 py-1.5 rounded-lg font-medium transition-all duration-200 bg-emerald-500 text-white shadow-sm';
 const INACTIVE_BTN = 'role-btn px-3 py-1.5 rounded-lg font-medium transition-all duration-200 text-emerald-300 hover:text-white';
+// New role: highlighted with a border + NEW badge while not selected (matches the reference file)
 // บทบาทใหม่: ไฮไลต์ด้วยกรอบ + ป้าย NEW เมื่อยังไม่ถูกเลือก (สอดคล้องกับไฟล์อ้างอิง)
 const INACTIVE_NEW_BTN =
   'role-btn px-3 py-1.5 rounded-lg font-medium transition-all duration-200 text-emerald-300 hover:text-white border border-emerald-500 bg-emerald-800/50';

@@ -1,10 +1,12 @@
 // N-UIP LINE OA Simulator Engine — with LIFF Login Integration
 
 // ============================================================
+// LIFF ID CONFIG — put your LIFF ID here
+// Create one at: https://developers.line.biz → Channel → LIFF
 // LIFF ID CONFIG — ใส่ LIFF ID ของคุณตรงนี้
 // สร้างได้ที่: https://developers.line.biz → Channel → LIFF
 // ============================================================
-const LIFF_ID = 'YOUR_LIFF_ID_HERE';   // <-- แก้ไขตรงนี้
+const LIFF_ID = 'YOUR_LIFF_ID_HERE';   // <-- edit here — <-- แก้ไขตรงนี้
 
 // ============================================================
 // BOOTSTRAP
@@ -39,6 +41,7 @@ async function initLiff() {
   const loginScreen   = document.getElementById('liff-login-screen');
   const devNote       = document.getElementById('dev-mode-note');
 
+  // If the LIFF ID is not set yet → show the Login screen with a dev note
   // ถ้ายังไม่ได้ตั้ง LIFF ID → แสดงหน้า Login พร้อม dev note
   if (LIFF_ID === 'YOUR_LIFF_ID_HERE') {
     loadingScreen.classList.add('hidden');
@@ -53,10 +56,12 @@ async function initLiff() {
     await liff.init({ liffId: LIFF_ID });
 
     if (!liff.isLoggedIn()) {
+      // Not logged in → hide loading, show the Login screen
       // ยังไม่ได้ Login → ซ่อน loading, แสดงหน้า Login
       loadingScreen.classList.add('hidden');
       loginScreen.classList.remove('hidden');
     } else {
+      // Logged in → fetch the Profile and go to the main screen
       // Login แล้ว → ดึงข้อมูล Profile และเข้าหน้าหลัก
       loadingScreen.classList.add('hidden');
       loginScreen.classList.add('hidden');
@@ -67,6 +72,7 @@ async function initLiff() {
 
   } catch (err) {
     console.error('[N-UIP] LIFF init error:', err);
+    // Fallback → hide loading, show the login screen with an error message
     // Fallback → ซ่อน loading แสดงหน้า login พร้อมข้อความ error
     loadingScreen.classList.add('hidden');
     loginScreen.classList.remove('hidden');
@@ -83,20 +89,24 @@ function setupLoginButtons() {
   const loginBtn = document.getElementById('line-login-btn');
   const skipBtn  = document.getElementById('skip-login-btn');
 
+  // Log in with LINE button
   // ปุ่ม Login ด้วย LINE
   loginBtn.addEventListener('click', () => {
     if (LIFF_ID === 'YOUR_LIFF_ID_HERE') {
       alert('กรุณาตั้งค่า LIFF ID ก่อนนะครับ\n\n1. เข้า developers.line.biz\n2. สร้าง LIFF App\n3. คัดลอก LIFF ID\n4. วางใน app.js บรรทัด const LIFF_ID = \'...\'');
       return;
     }
+    // Redirect to LINE OAuth
     // Redirect ไป LINE OAuth
     liff.login({ redirectUri: window.location.href });
   });
 
+  // Skip button (Preview Mode without logging in)
   // ปุ่ม Skip (Preview Mode โดยไม่ Login)
   skipBtn.addEventListener('click', () => {
     const loginScreen = document.getElementById('liff-login-screen');
     loginScreen.classList.add('hidden');
+    // Use mock data instead
     // ใช้ข้อมูล Mock แทน
     injectLineProfile({
       displayName: 'สมชาย รักษ์นนทบุรี',
@@ -116,10 +126,12 @@ function setupLoginButtons() {
 // ============================================================
 
 function injectLineProfile(profile) {
+  // Update the Profile badge in the Suan Suk header
   // อัปเดต Profile badge ใน Header ของ Suan Suk
   const headerEl = document.querySelector('.suansuk-header');
   if (!headerEl) return;
 
+  // Create the badge element
   // สร้าง badge element
   const badgeId = 'line-user-badge';
   let badge = document.getElementById(badgeId);
@@ -140,15 +152,18 @@ function injectLineProfile(profile) {
     <span class="line-logged-badge">LINE</span>
   `;
 
+  // Also update the Title info
   // อัปเดต Title info ด้วย
   const titleEl = document.querySelector('.suansuk-title-info h4');
   if (titleEl) titleEl.textContent = 'หมู่บ้านสวนสุข';
 
+  // Add a subtitle showing the userId
   // เพิ่ม subtitle บอก userId
   console.info(`[N-UIP] Logged in as: ${profile.displayName} (${profile.userId})`);
 }
 
 function showLoggedInState(profile) {
+  // Show a welcome message in the chat
   // แสดงข้อความต้อนรับใน Chat
   setTimeout(() => {
     appendMessage('bot', 
@@ -166,6 +181,7 @@ function liffLogout() {
     liff.logout();
     window.location.reload();
   } else {
+    // Preview mode — reload back to the login screen
     // Preview mode — reload กลับหน้า login
     window.location.reload();
   }

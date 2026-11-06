@@ -1,6 +1,13 @@
 /* ===================================================================
+ *  NonD DATA LAYER (default values for the role dashboards)
  *  NonD DATA LAYER (ค่า default สำหรับแดชบอร์ดบทบาท)
  * ===================================================================
+ *  - The Public dashboard uses "real data" pulled live from Google Sheets
+ *    through services/wasteSheet.js (auto-connects to the Publish-to-web CSV link)
+ *  - The values below are demo data for the role dashboards (municipality/village/factory)
+ *    which the current sheet has no data for (e.g. carbon credits, dividends)
+ *  - provinceSummary is a default value that is overwritten with the sheet's real data
+ *    once the connection succeeds (see App.jsx)
  *  - แดชบอร์ดสาธารณะ (Public) ใช้ "ข้อมูลจริง" ดึงสดจาก Google Sheets
  *    ผ่าน services/wasteSheet.js (auto-connect ลิงก์ Publish-to-web CSV)
  *  - ค่าด้านล่างนี้เป็นข้อมูลสาธิตของแดชบอร์ดบทบาท (เทศบาล/หมู่บ้าน/โรงงาน)
@@ -9,6 +16,7 @@
  *    เมื่อเชื่อมต่อสำเร็จ (ดู App.jsx)
  * =================================================================== */
 
+// -------- Demo data store for the role dashboards + default provinceSummary --------
 // -------- คลังข้อมูลสาธิตของแดชบอร์ดบทบาท + ค่าเริ่มต้น provinceSummary --------
 export const DEFAULT_DATA = {
   muniCarbon: {
@@ -34,8 +42,14 @@ export const DEFAULT_DATA = {
 };
 
 /* ===================================================================
+ *  COLLECTOR LAYER (new feature — inspired by nond_charge-keeper.html)
  *  COLLECTOR LAYER (ฟีเจอร์ใหม่ — แรงบันดาลใจจาก nond_charge-keeper.html)
  * ===================================================================
+ *  Supports role 5, "waste collector" (Collector Terminal), which records
+ *  sorted waste amounts per household from a digital scale (simulated Bluetooth), then
+ *  "syncs" the data to the central system so the village juristic office can assess
+ *  "spoiled waste" fines (waste sorted so badly it cannot be used)
+ *  All values below are demo data (no sheet backs them yet)
  *  รองรับบทบาทที่ 5 "พนักงานเก็บขยะ" (Collector Terminal) ซึ่งบันทึก
  *  ปริมาณขยะแยกประเภทรายบ้านจากตาชั่งดิจิทัล (จำลอง Bluetooth) แล้ว
  *  "ซิงค์" ข้อมูลขึ้นสู่ส่วนกลาง เพื่อให้นิติบุคคลหมู่บ้านนำไปประเมิน
@@ -43,9 +57,11 @@ export const DEFAULT_DATA = {
  *  ค่าทั้งหมดด้านล่างเป็นข้อมูลสาธิต (ยังไม่มีชีตรองรับ)
  * =================================================================== */
 
+// Spoiled-waste fine rate (baht/kg) — used by both the Collector and Village sides
 // อัตราค่าปรับขยะเสีย (บาท/กก.) — ใช้ทั้งฝั่ง Collector และ Village
 export const PENALTY_RATE_PER_KG = 5;
 
+// List of villages in the area (same keys as DEFAULT_DATA.villages for consistency)
 // รายชื่อหมู่บ้านในพื้นที่ (ใช้ key เดียวกับ DEFAULT_DATA.villages เพื่อความสอดคล้อง)
 export const VILLAGE_OPTIONS = [
   { id: 'a', name: 'หมู่บ้านแสนสุขนนท์ A' },
@@ -53,9 +69,11 @@ export const VILLAGE_OPTIONS = [
   { id: 'c', name: 'หมู่บ้านร่มรื่นนนทบุรี C' },
 ];
 
+// Map of id -> village name (for display/messages)
 // แผนที่ id -> ชื่อหมู่บ้าน (สำหรับแสดงผล/ข้อความ)
 export const VILLAGE_NAMES = Object.fromEntries(VILLAGE_OPTIONS.map((v) => [v.id, v.name]));
 
+// Simulated Bluetooth scale weights (cycled each time "read weight" is pressed)
 // ค่าน้ำหนักจำลองจากตาชั่ง Bluetooth (วนซ้ำเมื่อกดปุ่ม "ดึงค่าน้ำหนัก")
 export const SIMULATED_SCALE_WEIGHTS = [
   { wet: 1.2, dry: 4.5, hazard: 0, spoiled: 0 },
@@ -63,6 +81,8 @@ export const SIMULATED_SCALE_WEIGHTS = [
   { wet: 0.5, dry: 2.0, hazard: 0, spoiled: 0.5 },
 ];
 
+// Initial collection records (demo) — village uses the keys 'a'|'b'|'c'
+// This set belongs to village A so the Collector and Village (แสนสุขนนท์ A) pages show the same data
 // บันทึกการจัดเก็บเริ่มต้น (สาธิต) — village ใช้ key 'a'|'b'|'c'
 // ชุดนี้สังกัดหมู่บ้าน A เพื่อให้ทั้งหน้า Collector และ Village (แสนสุขนนท์ A) เห็นตรงกัน
 export const INITIAL_COLLECTIONS = [

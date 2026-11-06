@@ -353,7 +353,11 @@ function MuniFactory({ exportData, factoryApproved }) {
         </div>
       </div>
 
-      {/* ตารางจัดสรรผลประโยชน์คาร์บอนเครดิต — โครงสร้างใหม่ 40:40:20
+      {/* Carbon credit benefit allocation table — new 40:40:20 structure
+       *  (source 40% / sponsor 40% / municipality 20%) based on nond_charge-keeper.html
+       *  Keeps the old behavior: Factory C's status is tied to factoryApproved (the approve button on the main page)
+       *
+       *  ตารางจัดสรรผลประโยชน์คาร์บอนเครดิต — โครงสร้างใหม่ 40:40:20
        *  (ต้นทาง 40% / ผู้สนับสนุน 40% / เทศบาล 20%) อ้างอิงจาก nond_charge-keeper.html
        *  คงพฤติกรรมเดิม: สถานะของโรงงาน C ผูกกับ factoryApproved (ปุ่มอนุมัติในหน้าหลัก) */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -390,7 +394,7 @@ function MuniFactory({ exportData, factoryApproved }) {
               </tr>
             </thead>
             <tbody className="text-xs divide-y divide-slate-100">
-              {/* โรงงาน A — เครดิตรวม 2.40: 40%=0.96, 40%=0.96, 20%=0.48 */}
+              {/* Factory A — total credits 2.40: 40%=0.96, 40%=0.96, 20%=0.48 — โรงงาน A — เครดิตรวม 2.40: 40%=0.96, 40%=0.96, 20%=0.48 */}
               <tr className="hover:bg-slate-50">
                 <td className="p-4 font-semibold text-slate-800">
                   โรงงานอุตสาหกรรมเหล็กพรีเมียร์ (โรงงาน A)
@@ -405,7 +409,7 @@ function MuniFactory({ exportData, factoryApproved }) {
                   <span className="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full text-[10px] font-bold">จัดสรรเสร็จสมบูรณ์</span>
                 </td>
               </tr>
-              {/* โรงงาน B — เครดิตรวม 1.90: 40%=0.76, 40%=0.76, 20%=0.38 */}
+              {/* Factory B — total credits 1.90: 40%=0.76, 40%=0.76, 20%=0.38 — โรงงาน B — เครดิตรวม 1.90: 40%=0.76, 40%=0.76, 20%=0.38 */}
               <tr className="hover:bg-slate-50">
                 <td className="p-4 font-semibold text-slate-800">
                   โรงงานประกอบชิ้นส่วนไม้แปรรูป (โรงงาน B)
@@ -420,7 +424,7 @@ function MuniFactory({ exportData, factoryApproved }) {
                   <span className="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full text-[10px] font-bold">จัดสรรเสร็จสมบูรณ์</span>
                 </td>
               </tr>
-              {/* โรงงาน C — เครดิตรวม 1.40: 40%=0.56, 40%=0.56, 20%=0.28 (สถานะผูกกับ factoryApproved) */}
+              {/* Factory C — total credits 1.40: 40%=0.56, 40%=0.56, 20%=0.28 (status tied to factoryApproved) — โรงงาน C — เครดิตรวม 1.40: 40%=0.56, 40%=0.56, 20%=0.28 (สถานะผูกกับ factoryApproved) */}
               <tr className="hover:bg-slate-50">
                 <td className="p-4 font-semibold text-slate-800">
                   โรงงานผลิตพาเลทพลาสติกยูเนี่ยน (โรงงาน C)
@@ -439,7 +443,7 @@ function MuniFactory({ exportData, factoryApproved }) {
                   )}
                 </td>
               </tr>
-              {/* แถวสรุป — รวมเครดิต 5.70: 40%=2.28, 40%=2.28, 20%=1.14 */}
+              {/* Summary row — total credits 5.70: 40%=2.28, 40%=2.28, 20%=1.14 — แถวสรุป — รวมเครดิต 5.70: 40%=2.28, 40%=2.28, 20%=1.14 */}
               <tr className="bg-slate-100/50 font-bold border-t-2 border-slate-200">
                 <td className="p-4 text-slate-700" colSpan={2}>รวมเครดิตสะสมในระบบ (เฉพาะรอบนี้)</td>
                 <td className="p-4 text-right text-emerald-700">5.70 ตัน</td>
@@ -552,6 +556,7 @@ function MuniWaste() {
 
 /* ---------------- SUB-TAB: COMMUNITY ---------------- */
 function MuniCommunity({ v, villages, villageFilter, setVillageFilter, exportData }) {
+  // ----- Prepare Pie chart data: the 60% dividend returned to villages, split by village -----
   // ----- เตรียมข้อมูล Pie chart: สัดส่วนเงินปันผล 60% คืนหมู่บ้าน แบ่งตามหมู่บ้าน -----
   const toNum = (s) => Number(String(s).replace(/[^\d.]/g, '')) || 0;
   const PIE_COLORS = { a: '#6366f1', b: '#f59e0b', c: '#10b981' };
@@ -563,7 +568,7 @@ function MuniCommunity({ v, villages, villageFilter, setVillageFilter, exportDat
     value: toNum(vv.share),
   }));
   const shareTotal = shareEntries.reduce((sum, s) => sum + s.value, 0) || 1;
-  let pieAcc = 0; // เปอร์เซ็นต์สะสม เพื่อกำหนดจุดเริ่มของแต่ละชิ้น (เริ่มที่ 12 นาฬิกา)
+  let pieAcc = 0; // cumulative percent, used as each slice's start point (starting at 12 o'clock) — เปอร์เซ็นต์สะสม เพื่อกำหนดจุดเริ่มของแต่ละชิ้น (เริ่มที่ 12 นาฬิกา)
   const pieSlices = shareEntries.map((s) => {
     const pct = (s.value / shareTotal) * 100;
     const slice = { ...s, pct, offset: 25 - pieAcc };
@@ -621,7 +626,7 @@ function MuniCommunity({ v, villages, villageFilter, setVillageFilter, exportDat
         </div>
       </div>
 
-      {/* Pie chart: สัดส่วนเงินปันผลคืนหมู่บ้าน (60%) แบ่งตามหมู่บ้าน */}
+      {/* Pie chart: share of the dividend returned to villages (60%), split by village — Pie chart: สัดส่วนเงินปันผลคืนหมู่บ้าน (60%) แบ่งตามหมู่บ้าน */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <div className="border-b border-slate-100 pb-3">
           <h4 className="font-bold text-slate-800 text-sm md:text-base flex items-center gap-2">
@@ -631,7 +636,7 @@ function MuniCommunity({ v, villages, villageFilter, setVillageFilter, exportDat
           <p className="text-xs text-slate-500 mt-1">เปรียบเทียบยอดเงินส่วนแบ่งสะสมที่แต่ละหมู่บ้านได้รับจากการคัดแยกขยะแห้ง</p>
         </div>
         <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
-          {/* โดนัทชาร์ต */}
+          {/* Donut chart — โดนัทชาร์ต */}
           <div className="relative w-44 h-44 flex-shrink-0">
             <svg viewBox="0 0 36 36" className="w-full h-full">
               <circle cx="18" cy="18" r="15.915" fill="none" stroke="#f1f5f9" strokeWidth="4" />
@@ -658,7 +663,7 @@ function MuniCommunity({ v, villages, villageFilter, setVillageFilter, exportDat
             </div>
           </div>
 
-          {/* Legend แบบกระชับ — ตัวเลขอยู่ชิดชื่อ ไม่ถูกดันไปขวาสุด */}
+          {/* Compact legend — numbers sit next to the names instead of being pushed to the far right — Legend แบบกระชับ — ตัวเลขอยู่ชิดชื่อ ไม่ถูกดันไปขวาสุด */}
           <div className="w-full lg:w-auto space-y-2.5">
             {pieSlices.map((s) => (
               <div key={s.id} className="flex items-center gap-2.5 text-xs">
@@ -670,7 +675,7 @@ function MuniCommunity({ v, villages, villageFilter, setVillageFilter, exportDat
             ))}
           </div>
 
-          {/* Visualization เติมพื้นที่ว่างฝั่งขวา — กราฟแท่งแนวนอนเปรียบเทียบสัดส่วน */}
+          {/* Visualization filling the empty right side — horizontal bar chart comparing shares — Visualization เติมพื้นที่ว่างฝั่งขวา — กราฟแท่งแนวนอนเปรียบเทียบสัดส่วน */}
           <div className="flex-1 w-full space-y-3 lg:border-l lg:border-slate-100 lg:pl-8">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
               เปรียบเทียบสัดส่วนรายหมู่บ้าน
