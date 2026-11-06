@@ -17,6 +17,9 @@ Village Juristic Office · Industrial Factory · Waste Collector.
 
 An explanation of every chart and number on screen is in [`explanation.md`](explanation.md) (English · Thai).
 
+**Author:** built and maintained by **Punnawit Arunyanart** ([Punnawit0425](https://github.com/Punnawit0425)).
+Some early commits were pushed from a shared account (`koraveetp`); all of the work in this repository is by the author.
+
 ### Install and run
 
 ```
@@ -220,6 +223,9 @@ them to a sheet.
 - ใช้ Tailwind (Play CDN), `lucide-react`, `recharts`, Google Fonts
 
 คำอธิบายกราฟและตัวเลขแต่ละตัวบนหน้าจอ ดูได้ที่ [`explanation.md`](explanation.md)
+
+**ผู้พัฒนา:** พัฒนาและดูแลโดย **Punnawit Arunyanart** ([Punnawit0425](https://github.com/Punnawit0425))
+commit ช่วงแรกบางส่วนถูก push จากบัญชีที่ใช้ร่วมกัน (`koraveetp`) — งานทั้งหมดใน repository นี้เป็นของผู้พัฒนา
 
 ### การติดตั้งและรัน
 
